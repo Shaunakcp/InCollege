@@ -97,7 +97,4 @@ class UserAccount:       # class for storing username and password
   def getPass(self):
     return self.userPassword
 
-
-#def readUserData():
-  
 main()    # call main
