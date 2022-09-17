@@ -1,11 +1,12 @@
 # InCollege
 User_list = []         # list to store class objects of UserAccount
 def makeNewAccount():
-      newName = userName()
-      newPass = newPassword()
-      User = UserAccount(newName, newPass)
-      User_list.append(User)
+      newName = userName()        #Gets the user name
+      newPass = newPassword()     #Gets the passowrd for the account
+      User = UserAccount(newName, newPass)    #Stores the user name and password in an object
+      User_list.append(User)       #The object is added to a list
       print("\nNewly added user is: ",User.userName)
+  
 def newPassword():
   passAcceptable = False           # variable for determining whether the password is acceptable.
   while(passAcceptable != True):    # while loop to check password acceptability.
@@ -31,37 +32,27 @@ def newPassword():
     passAcceptable = True
   return nPass
 
-def userName():
+def userName():            #Asking users unsername
   uName = str(input("Enter your user name: "))
   return uName
-def loginUser():
+  
+def loginUser():   #If user has an existing account, then checking the credentials and loging them in
   flag = 0
   while flag!=1:
-    userName = input("\nEnter your username: ")
+    userName = input("\nEnter your username: ")      #asking for username and password
     userPassword = input("\nEnter your password: ")
     
-    for line in open("UserDatabase.txt","r").readlines(): 
+    for line in open("UserDatabase.txt","r").readlines():   #if the account exists, the check the username and password
       userInfo = line.split() 
       if userName == userInfo[0] and userPassword == userInfo[1]:
         print("Login successful!")
         print("welcome ",userName)
         return True
-      print("Your Username or Password is incorrect.")
+      print("Your Username or Password is incorrect.")    #print this msg if username or password does match
       return False
-    
-    '''for users in User_list:
-      if userName == users.userName and userPassword == users.userPassword:
-        print("\nLogin Successful")
-        print("\nWelcome ",userName)
-        flag = 1
-        break
-      else:
-        continue
-    if flag == 0:
-      print("\nUsername or Password Might be incorrect. Try again")   
-      continue  '''
+
 def storeUserData(User_list):   # Function to store user name and pass to .txt file
-  with open('UserDatabase.txt', 'a+') as f:
+  with open('UserDatabase.txt', 'a+') as f:      #Stores the username and password to a file.
     for i in User_list:
       f.write(i.getName())
       f.write(" ")
@@ -71,13 +62,13 @@ def storeUserData(User_list):   # Function to store user name and pass to .txt f
 
 def main (): 
   selection = 1
-  while selection!=3:
+  while selection!=3:        #code will run until user decides to exit the code
     selection = int(input("Make a selection:\n 1. Create a new account (type 1)\n 2. Login to existing account (type 2)\n 3. Exit the code\n "))
     if selection==1:       # Making new account
       with open("UserDatabase.txt", 'r') as f:
         x = len(f.readlines())
         if x >= 5:
-          print("All permitted accounts have been created, please come back later")
+          print("\nERROR: All permitted accounts have been created, please try again later\n")
           f.close
           continue
       makeNewAccount()
@@ -92,9 +83,9 @@ class UserAccount:       # class for storing username and password
     self.userName = userName
     self.userPassword = userPassword
 
-  def getName(self):
+  def getName(self):          #getter method to get the username 
     return self.userName
-  def getPass(self):
+  def getPass(self):          #getter method to get password
     return self.userPassword
-
+  
 main()    # call main
