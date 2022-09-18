@@ -33,7 +33,19 @@ def newPassword():
   return nPass
 
 def userName():            #Asking users unsername
-  uName = str(input("Enter your user name: "))
+  nameIsUnique = False
+
+  while nameIsUnique == False:
+    uName = str(input("Enter your user name: "))
+   
+    for line in open("UserDatabase.txt","r").readlines():   # Unique username requirement
+        userInfo = line.split() 
+        if uName == userInfo[0]:
+          print('\nError: Username already exists, try a new username.')
+          break
+        else:
+          nameIsUnique = True     # Name is actually unique
+    
   return uName
   
 def loginUser():   #If user has an existing account, then checking the credentials and loging them in
@@ -48,8 +60,9 @@ def loginUser():   #If user has an existing account, then checking the credentia
         print("Login successful!")
         print("welcome ",userName)
         return True
-      print("Your Username or Password is incorrect.")    #print this msg if username or password does match
-      return False
+      
+    print("Your Username or Password is incorrect.")    #print this msg if username or password does match
+    return False
 
 def storeUserData(User_list):   # Function to store user name and pass to .txt file
   with open('UserDatabase.txt', 'a+') as f:      #Stores the username and password to a file.
@@ -60,25 +73,36 @@ def storeUserData(User_list):   # Function to store user name and pass to .txt f
       f.write("\n")
     f.close()
 
+def postLoginMenuSelection():
+    selection = int(input("\nPlease Select a menu option:\n1. Find a job\n2. Find a friend\n3. Learn a new skill\n>"))
+    return selection
+
+  
 def main (): 
   selection = 1
   while selection!=3:        #code will run until user decides to exit the code
     selection = int(input("Make a selection:\n 1. Create a new account (type 1)\n 2. Login to existing account (type 2)\n 3. Exit the code\n "))
-    if selection==1:       # Making new account
+    if selection==1:         # Making new account
       with open("UserDatabase.txt", 'r') as f:
         x = len(f.readlines())
         if x >= 5:
-          print("\nERROR: All permitted accounts have been created, please try again later\n")
+          print("\nERROR: All permitted accounts have been created, please come back later\n")
           f.close
           continue
       makeNewAccount()
       storeUserData(User_list)
       
+    elif selection==2:        #logging in into existing account
+      loggedIn = False
+      loggedIn = loginUser()
+      if loggedIn:            # if successfully logged in then continue to menu selection
+        break
+      elif not loggedIn:      # if failed login, retry.
+        continue
 
-    elif selection==2:     #logging in into existing account
-      loginUser()
+  postLoginMenuSelection()
     
-class UserAccount:       # class for storing username and password
+class UserAccount:            # class for storing username and password
   def __init__(self, userName, userPassword):
     self.userName = userName
     self.userPassword = userPassword
