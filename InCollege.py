@@ -1,115 +1,153 @@
-# InCollege
-User_list = []         # list to store class objects of UserAccount
-def makeNewAccount():
-      newName = userName()        #Gets the user name
-      newPass = newPassword()     #Gets the passowrd for the account
-      User = UserAccount(newName, newPass)    #Stores the user name and password in an object
-      User_list.append(User)       #The object is added to a list
-      print("\nNewly added user is: ",User.userName)
-  
-def newPassword():
-  passAcceptable = False           # variable for determining whether the password is acceptable.
-  while(passAcceptable != True):    # while loop to check password acceptability.
-    nPass = str(input("Enter a unique password.\n minimum of 8 characters,\n maximum of 12 characters,\n at least one capital letter,\n one digit,\n one special character\n> "))  # enter password.
-    r1, r2, r3 = False, False, False      # variables to hold if there is a capital letter (r1), a digit (r2), a special character (r3).
-    if len(nPass) < 8:      # Checking minimum pass length.
-      print("ERROR: Password must be atleast 8 characters!")
-      continue                  # restart loop if bad password.
-    elif (len(nPass) > 12):     # Checking maximum pass length.
-      print("ERROR: Password must be at maximum 12 characters!") 
-      continue                  # restart loop if bad password.
-    
-    for i in nPass: 
-      if i.isupper():            # there is a capital letter (r1)
-        r1 = True
-      if i.isdigit():             # there is a digit (r2)
-        r2 = True
-      if not((i.isalnum()) or (i==' ')):  # there is a special character and no spaces (r3)
-        r3 = True
-    if not (r1 and r2 and r3):
-      print("ERROR: Password does not meet ALL requirements, try again.")
-      continue
-    passAcceptable = True
-  return nPass
+import sqlite3
 
-def userName():            #Asking users unsername
-  nameIsUnique = False
+class AccountCreation:
+    def __init__(self, dbName):
+        self._db = sqlite3.connect(f"./{dbName}.db")
+        self._cur = self._db.cursor()
+        self._cur.execute("CREATE TABLE IF NOT EXISTS accounts "
+                          "('username' TEXT NOT NULL UNIQUE, 'password' TEXT NOT NULL)")
+        self.numAccounts = 0
+    
+    # CRUD
+    def commit(self):
+        self._db.commit()
 
-  while nameIsUnique == False:
-    uName = str(input("Enter your user name: "))
-   
-    for line in open("UserDatabase.txt","r").readlines():   # Unique username requirement
-        userInfo = line.split() 
-        if uName == userInfo[0]:
-          print('\nError: Username already exists, try a new username.')
-          break
-        else:
-          nameIsUnique = True     # Name is actually unique
-    
-  return uName
-  
-def loginUser():   #If user has an existing account, then checking the credentials and loging them in
-  flag = 0
-  while flag!=1:
-    userName = input("\nEnter your username: ")      #asking for username and password
-    userPassword = input("\nEnter your password: ")
-    
-    for line in open("UserDatabase.txt","r").readlines():   #if the account exists, the check the username and password
-      userInfo = line.split() 
-      if userName == userInfo[0] and userPassword == userInfo[1]:
-        print("Login successful!")
-        print("welcome ",userName)
+    def close(self):
+        self._cur.close()
+        self._db.close()
+
+    def addAccount(self, userName, passWord):
+        self.numAccounts += 1
+        query = "INSERT INTO accounts ('username', 'password') VALUES (?, ?)"
+        self._cur.execute(query, (userName, passWord))
+        self.commit()
+
+    def displayAccount(self):
+        self._cur.execute("SELECT * FROM accounts")
+        rows = self._cur.fetchall()
+        for row in rows:
+            print(f"Account: {row[0]}\nPassword: {row[1]}")
+
+    def deleteAccount(self):
+        userName = input("Enter the userName you want to delete: ")
+        query = "DELETE FROM accounts WHERE username == ?"
+        self._cur.execute(query, (userName,))
+        self.commit()
+
+    # Verifying input
+    def checkUsername(self, userName):
+        rows = self._cur.execute("SELECT * FROM accounts")
+        for row in rows:
+            if userName == row[0]:
+                return True
+        return False
+
+    def checkPassword(self, userName, password):
+        rows = self._cur.execute("SELECT * FROM accounts WHERE username == ?", (userName,))
+        for row in rows:
+            if row[1] == password:
+                return True
+        return False
+
+    def checkLimit(self):
+        return False if self.numAccounts == 5 else True
+
+    def createNewAccount(self):
+        if not self.checkLimit():
+            return "ERROR: All permitted accounts have been created, please come back later"
+        userName = input("Please enter your username: ")
+        while not self.checkExistingUsername(userName):
+            userName = input("This username is already registered, please enter a different username: ")
+        print("Please enter a password that has:")
+        print("\t- 8-12 characters")
+        print("\t- At least 1 capital letter")
+        print("\t- At least 1 digit")
+        print("\t- At least a special character")
+        print("\t- No space")
+        passWord = input("-> ")
+        while not self.checkPasswordConvention(passWord):
+            print("Please enter a password that has:")
+            print("\t- 8-12 characters")
+            print("\t- At least 1 capital letter")
+            print("\t- At least 1 digit")
+            print("\t- At least a special character")
+            print("\t- No space")
+            passWord = input("-> ")
+        self.addAccount(userName, passWord)
+        return f"Account {userName} successfully created"
+
+    def checkExistingUsername(self, userName):
+        self._cur.execute("SELECT username FROM accounts")
+        rows = self._cur.fetchall()
+        for row in rows:
+            if userName == row[0]:
+                return False
         return True
-      
-    print("Your Username or Password is incorrect.")    #print this msg if username or password does match
-    return False
 
-def storeUserData(User_list):   # Function to store user name and pass to .txt file
-  with open('UserDatabase.txt', 'a+') as f:      #Stores the username and password to a file.
-    for i in User_list:
-      f.write(i.getName())
-      f.write(" ")
-      f.write(i.getPass())
-      f.write("\n")
-    f.close()
+    def checkPasswordConvention(self, password):
+        r1, r2, r3, r4 = False, False, False, True      
+        # variables to hold if there is a capital letter (r1), 
+        # a digit (r2), a special character (r3), no space (r4).
+        if len(password) < 8:      # Checking minimum pass length.
+            print("ERROR: Password must be atleast 8 characters!")       
+            return False       
+        elif len(password) > 12:     # Checking maximum pass length.
+            print("ERROR: Password must be at maximum 12 characters!")  
+            return False               
+        for i in password: 
+            if i.isupper():             # there is a capital letter (r1)
+                r1 = True            
+            if i.isdigit():             # there is a digit (r2)
+                r2 = True
+            if not((i.isalnum()) or (i==' ')):  # there is a special character and no spaces (r3)
+                r3 = True
+            if i == ' ': # No space allowed
+                r4 = False
+        if not (r1 and r2 and r3 and r4):
+            print("ERROR: Password does not meet ALL requirements, try again.")
+            return False
+        return True
 
-def postLoginMenuSelection():
+def initialScreen(table):
+    print("Please choose between the options:\n1. Create new account\n2. Sign in to existing account\n3. Quit")
+    option = int(input("-> "))
+    while option != 3:
+        if option == 1:
+            print(table.createNewAccount())
+            table.displayAccount()
+        if option == 2:
+            signIn(table)
+        print("Please choose between the options:\n1. Create new account\n2. Sign in to existing account\n3. Quit")
+        option = int(input("-> "))
+
+def signIn(table):
+    userName = input("Please type in your Username: ")
+    while not table.checkUsername(userName):
+        userName = input("Username cannot be found, please enter the correct username: ")
+    password = input("Please type in your Password: ")
+    while not table.checkPassword(userName, password):
+        password = input(f"Incorrect password, please enter the correct password for {userName}: ")
+    actionsMenu()
+
+def actionsMenu():
     selection = int(input("\nPlease Select a menu option:\n1. Find a job\n2. Find a friend\n3. Learn a new skill\n>"))
-    return selection
+    if selection == 1 or selection == 2:
+        print("Under Construction")
+        actionsMenu()
+    elif selection == 3:
+        skillsMenu()
+        
+def skillsMenu():
+    print("Please select one of those skill:\n1. Python\n2. C++\n3. HTML\n4. JavaScript\n5. CSS")
+    selection = int(input("-> "))
+    print("Under Construction")
+    actionsMenu()
 
-  
-def main (): 
-  selection = 1
-  while selection!=3:        #code will run until user decides to exit the code
-    selection = int(input("Make a selection:\n 1. Create a new account (type 1)\n 2. Login to existing account (type 2)\n 3. Exit the code\n "))
-    if selection==1:         # Making new account
-      with open("UserDatabase.txt", 'r') as f:
-        x = len(f.readlines())
-        if x >= 5:
-          print("\nERROR: All permitted accounts have been created, please come back later\n")
-          f.close
-          continue
-      makeNewAccount()
-      storeUserData(User_list)
-      
-    elif selection==2:        #logging in into existing account
-      loggedIn = False
-      loggedIn = loginUser()
-      if loggedIn:            # if successfully logged in then continue to menu selection
-        break
-      elif not loggedIn:      # if failed login, retry.
-        continue
+def main():
+    accounts = AccountCreation("incollege")
+    initialScreen(accounts)
+    accounts.close()
 
-  postLoginMenuSelection()
-    
-class UserAccount:            # class for storing username and password
-  def __init__(self, userName, userPassword):
-    self.userName = userName
-    self.userPassword = userPassword
+if __name__ =="__main__":
+    main()
 
-  def getName(self):          #getter method to get the username 
-    return self.userName
-  def getPass(self):          #getter method to get password
-    return self.userPassword
-  
-main()    # call main
