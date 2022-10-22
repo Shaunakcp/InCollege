@@ -1,4 +1,8 @@
+from genericpath import sameopenfile
+import profile
 import sqlite3               # database used to store account & job information
+import string
+from tokenize import String
 
 class JobPosting:            # class for creating job listings
     def __init__(self, dbName):
@@ -192,6 +196,110 @@ class AccountCreation:        # class for creating accounts
         self.language = lang
         self._cur.execute("UPDATE accounts SET languagepreference = ? WHERE username = ?", (lang, self.currentUser))
         self.commit()
+
+class Profiles:
+    def __init__(self, dbName):
+        self.db = sqlite3.connect(f"./{dbName}.db")
+        self._cur = self.db.cursor()
+        #creates a table in sql for profiles info
+        self._cur.execute("Create IF NOT EXISTS profiles ('profile_user' TEXT NOT NULL,'title' TEXT NOT NULL, 'major' TEXT NOT NULL, 'university' TEXT NOT NULL, 'info' TEXT NOT NULL, 'experience' TEXT NOT NULL, 'education' TEXT NOT NULL)") 
+    
+    def addProfileUser(self, profile_user):
+        query = "INSERT INTO profiles ('profile_user) VALUES (?)"
+        self._cur.execute(query, (profile_user))
+        self.commit()
+
+    def addTitle(self,title):
+        query = "INSERT INTO profiles ('title') VALUES (?)"
+        self._cur.execute(query, (title))
+        self.commit()
+    
+    def addMajor(self,major):
+        query = "INSERT INTO profiles ('major') VALUES (?)"
+        self.commit()
+    
+    def addUni(self, university):
+        query = "INSERT INTO profiles ('university') VALUES (?)"
+        self._cur.execute(query, (university))
+        self.commit()
+    
+    def addInfo(self, info):
+        query = "INSERT INTO profiles ('info') VALUES (?)"
+        self._cur.execute(query, (info))
+        self.commit()
+    
+    def addExp(self, experience):
+        query = "INSERT INTO profiles ('experience') VALUES (?)"
+        self._cur.execute(query, experience ())
+        self.commit()
+    
+    def addEdu(self, education):
+        query = "INSERT INTO profiles ('experience') VALUES (?)"
+        self._cur.execute(query, education ())
+        self.commit()
+    
+    
+    def experienceInput(self):
+        experience = str(input("Enter job title: "))
+        experience = experience + "\n"  + input("Enter employer: ")
+        experience = experience + "\n"  + input("Enter Start Date: ") + input("Enter end date")
+        experience = experience + "\n"  + input("Enter location: ")
+        experience = experience + "\n"  + input("Enter job description: ")
+        return experience
+
+    def educationInput(self):
+        education = str(input("Enter School Name: "))
+        education = education + input("Enter degree: ")
+        education = education + input("Years attended: ")
+        return education
+    
+
+        
+    def createProfile(self):          #  martin - USF - - -   // Insert [Current user and Major == Null ]
+                                      #  aaron - - - - - - 
+                                      #  shaunak - - -  - //Insert[]
+
+                                      #  
+        userinput = 1
+        while(userinput != 0):                   
+            print("\n Update your profile")
+            userinput = input("Would you like to continue: 1(y) 0(n)")
+            self.addProfileUser(accounts.currentUser())
+            
+            userinput = input("Would you like to continue: 1(y) 0(n)")
+            title = input("Title: ")
+            self.addTitle(title)
+            
+            userinput = input("Would you like to continue: 1(y) 0(n)")
+            major = string.capwords(input("Major: "))
+            self.addMajor(major)
+            
+            userinput = input("Would you like to continue: 1(y) 0(n)")
+            university = string.capwords(input("University: "))
+            self.addUni(university)
+            
+            userinput = input("Would you like to continue: 1(y) 0(n)")
+            info = input("Info: ")
+            self.addInfo(info)
+            
+            userinput = input("Would you like to continue: 1(y) 0(n)")
+            experience = Profiles.experienceInput()
+            self.addExp(experience)
+            
+            userinput = input("Would you like to continue: 1(y) 0(n)")
+            education = Profiles.educationInput()
+            self.addEdu(education)
+
+
+    
+    
+    def commit(self):
+        self._db.commit()
+
+    def close(self):
+        self._cur.close()
+        self._db.close()
+
 
 class Friends:
     def __init__(self, dbName):
