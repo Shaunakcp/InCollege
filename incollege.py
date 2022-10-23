@@ -1,8 +1,8 @@
+from asyncio.windows_events import NULL
 from genericpath import sameopenfile
 import profile
 import sqlite3               # database used to store account & job information
-import string
-from tokenize import String
+
 
 class JobPosting:            # class for creating job listings
     def __init__(self, dbName):
@@ -197,50 +197,45 @@ class AccountCreation:        # class for creating accounts
         self._cur.execute("UPDATE accounts SET languagepreference = ? WHERE username = ?", (lang, self.currentUser))
         self.commit()
 
-class Profiles:
+class ProfilesCreation:
     def __init__(self, dbName):
-        self.db = sqlite3.connect(f"./{dbName}.db")
-        self._cur = self.db.cursor()
+        self._db = sqlite3.connect(f"./{dbName}.db")
+        self._cur = self._db.cursor()
         #creates a table in sql for profiles info
-        self._cur.execute("Create IF NOT EXISTS profiles ('profile_user' TEXT NOT NULL,'title' TEXT NOT NULL, 'major' TEXT NOT NULL, 'university' TEXT NOT NULL, 'info' TEXT NOT NULL, 'experience' TEXT NOT NULL, 'education' TEXT NOT NULL)") 
+        self._cur.execute("CREATE TABLE IF NOT EXISTS profiles ('profile_user' TEXT NOT NULL,'title' TEXT NULL, 'major' TEXT NULL, 'university' TEXT NULL, 'info' TEXT NULL, 'experience' TEXT NULL, 'education' TEXT NULL)") 
     
     def addProfileUser(self, profile_user):
-        query = "INSERT INTO profiles ('profile_user) VALUES (?)"
-        self._cur.execute(query, (profile_user))
+        query = "INSERT INTO profiles ('profile_user', 'title','major','university','info','experience','education') VALUES (?,?,?,?,?,?,?)"
+        self._cur.execute(query, (profile_user, "NULL", "NULL","NULL", "NULL", "NULL", "NULL"))
         self.commit()
 
     def addTitle(self,title):
-        query = "INSERT INTO profiles ('title') VALUES (?)"
-        self._cur.execute(query, (title))
+        self._cur.execute("UPDATE profiles SET title = ? WHERE profile_user = ?", (title, accounts.currentUser))
         self.commit()
-    
+
     def addMajor(self,major):
-        query = "INSERT INTO profiles ('major') VALUES (?)"
+        self._cur.execute("UPDATE profiles SET major = ? WHERE profile_user = ?", (major, accounts.currentUser))
         self.commit()
     
     def addUni(self, university):
-        query = "INSERT INTO profiles ('university') VALUES (?)"
-        self._cur.execute(query, (university))
+        self._cur.execute("UPDATE profiles SET university = ? WHERE profile_user = ?", (university, accounts.currentUser))
         self.commit()
     
     def addInfo(self, info):
-        query = "INSERT INTO profiles ('info') VALUES (?)"
-        self._cur.execute(query, (info))
+        self._cur.execute("UPDATE profiles SET info = ? WHERE profile_user = ?", (info, accounts.currentUser))
         self.commit()
     
     def addExp(self, experience):
-        query = "INSERT INTO profiles ('experience') VALUES (?)"
-        self._cur.execute(query, experience ())
+        self._cur.execute("UPDATE profiles SET experience = ? WHERE profile_user = ?", (experience, accounts.currentUser))
         self.commit()
     
     def addEdu(self, education):
-        query = "INSERT INTO profiles ('experience') VALUES (?)"
-        self._cur.execute(query, education ())
+        self._cur.execute("UPDATE profiles SET education = ? WHERE profile_user = ?", (education, accounts.currentUser))
         self.commit()
     
     
     def experienceInput(self):
-        experience = str(input("Enter job title: "))
+        experience = (input("Enter job title: "))
         experience = experience + "\n"  + input("Enter employer: ")
         experience = experience + "\n"  + input("Enter Start Date: ") + input("Enter end date")
         experience = experience + "\n"  + input("Enter location: ")
@@ -248,49 +243,67 @@ class Profiles:
         return experience
 
     def educationInput(self):
-        education = str(input("Enter School Name: "))
+        education = (input("Enter School Name: "))
         education = education + input("Enter degree: ")
         education = education + input("Years attended: ")
         return education
     
-
-        
-    def createProfile(self):          #  martin - USF - - -   // Insert [Current user and Major == Null ]
-                                      #  aaron - - - - - - 
-                                      #  shaunak - - -  - //Insert[]
-
-                                      #  
-        userinput = 1
-        while(userinput != 0):                   
-            print("\n Update your profile")
-            userinput = input("Would you like to continue: 1(y) 0(n)")
-            self.addProfileUser(accounts.currentUser())
-            
-            userinput = input("Would you like to continue: 1(y) 0(n)")
+    def editProfile(self):
+        selection = int(input("\nPlease select a profile edit option:\n1. Enter or Edit Title\n2. Edit or enter Major\n3. Edit or enter University\n4. Edit or enter Info\n5. Edit or enter Experience \n6. Edit or enter Education\n7. Save and Exit-> "))
+        if(selection == 1):
             title = input("Title: ")
             self.addTitle(title)
-            
-            userinput = input("Would you like to continue: 1(y) 0(n)")
-            major = string.capwords(input("Major: "))
+        
+        elif(selection == 2):    
+            major = (input("Major: "))
             self.addMajor(major)
             
-            userinput = input("Would you like to continue: 1(y) 0(n)")
-            university = string.capwords(input("University: "))
+        elif(selection == 3):    
+            university = input("University: ")
             self.addUni(university)
             
-            userinput = input("Would you like to continue: 1(y) 0(n)")
+        elif(selection == 4):     
             info = input("Info: ")
             self.addInfo(info)
             
-            userinput = input("Would you like to continue: 1(y) 0(n)")
-            experience = Profiles.experienceInput()
+        elif(selection == 5):     
+            experience = self.experienceInput()
             self.addExp(experience)
-            
-            userinput = input("Would you like to continue: 1(y) 0(n)")
-            education = Profiles.educationInput()
+        
+        elif(selection == 6):     
+            education = self.educationInput()
             self.addEdu(education)
+        elif(selection == 7): 
+            return print("Changes have been saved")
+    
+    def checkExistingUsername(self, profile_name):               # Checking Dup when the user creates a new account
+        self._cur.execute("SELECT profile_user FROM profiles")
+        rows = self._cur.fetchall()
+        for row in rows:
+            if profile_name == row[0]:
+                return False
+        return True
+    def createProfile(self):
+        if (not profiles.checkExistingUsername(accounts.currentUser)):
+            print("You may only have one profile")
+            return False
+        else:    
+            print("\n Your profile has been created!")
+            curUser = accounts.currentUser
+            self.addProfileUser(curUser)
 
-
+    
+    def viewProfile(self):
+        rows = self._cur.execute("SELECT * FROM profiles")
+        for row in rows:
+            print(f"User: {row[0]}")
+            print(f"Title: {row[1]}")
+            print(f"Major: {row[2]}")
+            print(f"University: {row[3]}")
+            print(f"Info: {row[4]}")
+            print(f"Experience: {row[5]}")
+            print(f"Education: {row[6]}")
+            
     
     
     def commit(self):
@@ -495,7 +508,7 @@ def signIn():            # function to sign in user.
     actionsMenu()
 
 def actionsMenu():        # Menu after logging in. Sub to initialScreen()
-    selection = int(input("\nPlease select a menu option:\n1. Find or Post a job\n2. Find a friend\n3. Learn a new skill\n4. Useful Links\n5. InCollege Important Links\n6. Sign Out\n-> "))
+    selection = int(input("\nPlease select a menu option:\n1. Find or Post a job\n2. Find a friend\n3. Learn a new skill\n4. Useful Links\n5. InCollege Important Links\n6. make profile \n7. Sign Out\n-> "))
     while True:
         if selection == 1:
             createOrFindJobMenu()
@@ -508,10 +521,12 @@ def actionsMenu():        # Menu after logging in. Sub to initialScreen()
         elif selection == 5:
             incollegeImportantLinks()
         elif selection == 6:
+             createOrViewProfileMenu()
+        elif selection == 7:
             print("\nSigning you out...\n")
             accounts.currentUser = None
             return
-        selection = int(input("\nPlease select a menu option:\n1. Find or Post a job\n2. Find a friend\n3. Learn a new skill\n4. Useful Links\n5. InCollege Important Links\n6. Sign Out\n-> "))
+        selection = int(input("\nPlease select a menu option:\n1. Find or Post a job\n2. Find a friend\n3. Learn a new skill\n4. Useful Links\n5. InCollege Important Links\n6. Make Profile\n 7. Sign Out-> "))
         
 
 def usefulLinks():
@@ -585,6 +600,24 @@ def incollegeImportantLinks():          # Menu to display InCollege Important Li
         elif link == 10:
             return
         link = int(input("\nPlease select a menu option:\n1. Copyright Notice\n2. About\n3. Accessibility\n4. User Agreement\n5. Privachy Policy\n6. Cookie Policy\n7. Copyright Policy\n8. Brand Policy\n9. Languages\n10. Back\n-> "))
+
+# def makeProfile(self):
+#     Profiles.createProfile(self)
+def createOrViewProfileMenu():
+    option = int(input("\nPlease make a profile related selection:\n1. View Profile\n2. Create a Profile\n3. edit profile \n4.Back\n-> "))
+    if option == 1:
+        profiles.viewProfile()
+        createOrViewProfileMenu()  
+    elif option == 2:
+        profiles.createProfile()
+        createOrViewProfileMenu()
+    elif option == 3:
+        profiles.editProfile()
+        createOrViewProfileMenu()
+    elif option == 4:
+        actionsMenu()
+
+
 
 def createOrFindJobMenu():        # Menu to search job listings or create a new job. sub to actionsMenu()
     option = int(input("\nPlease make a job related selection:\n1. Search posted jobs\n2. Create a job listing\n3. Back\n-> "))
@@ -682,6 +715,8 @@ def main():
     global friends
     global accounts
     global jobs
+    global profiles
+    profiles = ProfilesCreation("incollege")
     jobs = JobPosting("incollege")
     accounts = AccountCreation("incollege")
     friends = Friends("incollege")
