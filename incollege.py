@@ -1,10 +1,4 @@
-from asyncio.windows_events import NULL
-from distutils.dir_util import copy_tree
-from genericpath import sameopenfile
-import profile
-import sqlite3
-from tabnanny import check               # database used to store account & job information
-
+import sqlite3           # database used to store account & job information
 
 class JobPosting:            # class for creating job listings
     def __init__(self, dbName):
@@ -208,7 +202,7 @@ class ProfilesCreation:
         self._db = sqlite3.connect(f"./{dbName}.db")
         self._cur = self._db.cursor()
         #creates a table in sql for profiles info
-        self._cur.execute("CREATE TABLE IF NOT EXISTS profiles ('profile_user' TEXT NOT NULL,'title' TEXT NULL, 'major' TEXT NULL, 'university' TEXT NULL, 'info' TEXT NULL, 'experience' TEXT NULL, 'education' TEXT NULL)") 
+        self._cur.execute("CREATE TABLE IF NOT EXISTS profiles ('profile_user' TEXT NOT NULL,'title' TEXT NOT NULL, 'major' TEXT NOT NULL, 'university' TEXT NOT NULL, 'info' TEXT NOT NULL, 'experience' TEXT NOT NULL, 'education' TEXT NOT NULL)") 
     
     def addProfileUser(self, profile_user):
         query = "INSERT INTO profiles ('profile_user', 'title','major','university','info','experience','education') VALUES (?,?,?,?,?,?,?)"
@@ -261,11 +255,11 @@ class ProfilesCreation:
             self.addTitle(title)
         
         elif(selection == 2):    
-            major = (input("Major: "))
+            major = (input("Major: ")).title()
             self.addMajor(major)
             
         elif(selection == 3):    
-            university = input("University: ")
+            university = input("University: ").title()
             self.addUni(university)
             
         elif(selection == 4):     
@@ -280,15 +274,15 @@ class ProfilesCreation:
             education = self.educationInput()
             self.addEdu(education)
         elif(selection == 7): 
-            return print("Changes have been saved")
+            print("Changes have been saved")
+            return
     
     def checkExistingUsername(self, profile_name):               # Checking Dup when the user creates a new account
-        self._cur.execute("SELECT profile_user FROM profiles")
-        rows = self._cur.fetchall()
-        for row in rows:
-            if profile_name == row[0]:
-                return False
-        return True
+        rows = self._cur.execute("SELECT profile_user FROM profiles WHERE profile_user = ?", (profile_name,))
+        res = rows.fetchall()
+        if res == []:
+            return True
+        return False
         
     def createProfile(self):
         if (not profiles.checkExistingUsername(accounts.currentUser)):
@@ -407,8 +401,6 @@ def friendRequestsList():
         flag = False if input("Do you want to accept more requests? (y/n)") == 'n' else True
 
 def showMyNetwork():
-    profileInput = NULL
-    profileFriendUser = NULL
     list_of_friends = friends.listOfFriends(accounts.currentUser)
     if list_of_friends == []:
         return
@@ -422,30 +414,26 @@ def showMyNetwork():
         for friend in list_of_friends:
             account = accounts.searchAccount(friend[0])
             if account[10] == "True":
-                print(f"{i}: {account[2]} {account[3]} User Has Profile")
+                print(f"{i}: {account[2]} {account[3]} -- User Has Profile")
             else:
                 print(f"{i}: {account[2]} {account[3]}")
         
             i += 1
-        profileInput = input("Would you like to view a friend's profile? Enter 1(y) or 0(n): ")
+        profileInput = input("Would you like to view a friend's profile? Enter (y) or (n): ")
     
-        while(profileInput != 0):
-            profileFriendUser = input("Please input the friend index you'd like to friend ")
-            if (accounts.checkExistingUsername(profileFriendUser)):
-                print("Please check spelling of friends user name")
-
-            elif(not friends.checkIfConnected(accounts.currentUser, profileFriendUser)):
-                print("Please make sure you are connected with the User")
-            elif(profiles.checkExistingUsername(profileFriendUser)):
+        while(profileInput != 'n'):
+            profileFriendUser = int(input("Please input the friend index you'd like to view their profile -> "))
+            user = list_of_friends[profileFriendUser][0]
+            if(profiles.checkExistingUsername(user)):
                 print("User does not have a profile")
-                profileInput = input("Would you like to continue to try and view a friend's profile? Enter 1(y) or 0(n)")
-                if(profileInput == 1):
+                profileInput = input("Would you like to continue to try and view a friend's profile? Enter (y) or (n)")
+                if(profileInput == 'y'):
                     continue
                 else:
-                    profileInput = 0    
+                    profileInput = 'n'    
             else:
-                profiles.viewProfile(profileFriendUser)
-                profileInput = 0
+                profiles.viewProfile(user)
+                profileInput = 'n'
             
 
         
@@ -545,7 +533,7 @@ def signIn():            # function to sign in user.
     actionsMenu()
 
 def actionsMenu():        # Menu after logging in. Sub to initialScreen()
-    selection = int(input("\nPlease select a menu option:\n1. Find or Post a job\n2. Find a friend\n3. Learn a new skill\n4. Useful Links\n5. InCollege Important Links\n6. make profile \n7. Sign Out\n-> "))
+    selection = int(input("\nPlease select a menu option:\n1. Find or Post a job\n2. Find a friend\n3. Learn a new skill\n4. Useful Links\n5. InCollege Important Links\n6. Profile Management\n7. Sign Out\n-> "))
     while True:
         if selection == 1:
             createOrFindJobMenu()
@@ -563,7 +551,7 @@ def actionsMenu():        # Menu after logging in. Sub to initialScreen()
             print("\nSigning you out...\n")
             accounts.currentUser = None
             return
-        selection = int(input("\nPlease select a menu option:\n1. Find or Post a job\n2. Find a friend\n3. Learn a new skill\n4. Useful Links\n5. InCollege Important Links\n6. Make Profile\n 7. Sign Out-> "))
+        selection = int(input("\nPlease select a menu option:\n1. Find or Post a job\n2. Find a friend\n3. Learn a new skill\n4. Useful Links\n5. InCollege Important Links\n6. Make Profile\n7. Sign Out-> "))
         
 
 def usefulLinks():
