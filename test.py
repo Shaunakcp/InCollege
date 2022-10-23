@@ -331,4 +331,40 @@ def test_pendingFriendRequests():
     
     assert not friends.checkIfPending(accounts.currentUser, "Test11")
         
- 
+ # Epic 5  22 Oct 2022 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Newly created user does not have a profile
+def test_emptyProfile():
+    global accounts
+    global profiles
+    accounts = incollege.AccountCreation("test")
+    profiles = incollege.ProfilesCreation("test")
+    accounts.currentUser = "userTest1"
+    assert profiles.checkExistingUsername('userTest1')
+
+# Check for Title in Profile
+def test_ProfileTitle():
+    global accounts
+    global profiles
+    accounts = incollege.AccountCreation("test")
+    profiles = incollege.ProfilesCreation("test")
+    accounts.currentUser = "userTest1"
+    profiles.addProfileUser("userTest1")
+    profiles.addTitle(accounts.currentUser, "SWE")
+    rows = profiles._cur.execute("SELECT title FROM profiles WHERE profile_user = ?", (accounts.currentUser,))
+
+    assert rows.fetchall()[0][0] == "SWE"
+
+# Check for Major name convention
+def test_ProfileMajor():
+    global accounts
+    global profiles
+    accounts = incollege.AccountCreation("test")
+    profiles = incollege.ProfilesCreation("test")
+    accounts.currentUser = "userTest1"
+    profiles.addProfileUser("userTest1")
+    profiles.addMajor(accounts.currentUser, "cOmPuTer ScIence")
+    rows = profiles._cur.execute("SELECT major FROM profiles WHERE profile_user = ?", (accounts.currentUser,))
+    assert rows.fetchall()[0][0] == "Computer Science"
+
+# Check for University name convention
