@@ -1,7 +1,9 @@
 from asyncio.windows_events import NULL
+from distutils.dir_util import copy_tree
 from genericpath import sameopenfile
 import profile
-import sqlite3               # database used to store account & job information
+import sqlite3
+from tabnanny import check               # database used to store account & job information
 
 
 class JobPosting:            # class for creating job listings
@@ -59,7 +61,7 @@ class AccountCreation:        # class for creating accounts
         self._db = sqlite3.connect(f"./{dbName}.db")
         self._cur = self._db.cursor()
         # Creating a table in SQL file to store account info
-        self._cur.execute("CREATE TABLE IF NOT EXISTS accounts ('username' TEXT NOT NULL UNIQUE, 'password' TEXT NOT NULL, 'firstname' TEXT NOT NULL, 'lastname' TEXT NOT NULL, 'university' TEXT NOT NULL, 'major' TEXT NOT NULL, 'emailnoti' TEXT NOT NULL, 'sms' TEXT NOT NULL, 'adfeatures' TEXT NOT NULL, 'languagepreference' TEXT NOT NULL)")
+        self._cur.execute("CREATE TABLE IF NOT EXISTS accounts ('username' TEXT NOT NULL UNIQUE, 'password' TEXT NOT NULL, 'firstname' TEXT NOT NULL, 'lastname' TEXT NOT NULL, 'university' TEXT NOT NULL, 'major' TEXT NOT NULL, 'emailnoti' TEXT NOT NULL, 'sms' TEXT NOT NULL, 'adfeatures' TEXT NOT NULL, 'languagepreference' TEXT NOT NULL, 'profile_bool' TEXT NOT NULL)")
         self.currentUser = None
         self.language = "English"
 
@@ -72,8 +74,12 @@ class AccountCreation:        # class for creating accounts
         self._db.close()
 
     def addAccount(self, userName, passWord, firstName, lastName, university, major): # Create new record in the Database after the input is verified
-        query = "INSERT INTO accounts ('username', 'password', 'firstname', 'lastname', 'university', 'major', 'emailnoti', 'sms', 'adfeatures', 'languagepreference') VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
-        self._cur.execute(query, (userName, passWord, firstName, lastName, university, major, "On", "On", "On", "English"))
+        query = "INSERT INTO accounts ('username', 'password', 'firstname', 'lastname', 'university', 'major', 'emailnoti', 'sms', 'adfeatures', 'languagepreference', 'profile_bool') VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+        self._cur.execute(query, (userName, passWord, firstName, lastName, university, major, "On", "On", "On", "English", 'False'))
+        self.commit()
+
+    def updateProfileBool(self, userName):
+        self._cur.execute("UPDATE accounts SET profile_bool = ? WHERE username = ?", (profiles.checkExistingUsername(userName), accounts.currentUser))
         self.commit()
 
     def displayAccount(self):            # print all account and password
@@ -283,6 +289,7 @@ class ProfilesCreation:
             if profile_name == row[0]:
                 return False
         return True
+        
     def createProfile(self):
         if (not profiles.checkExistingUsername(accounts.currentUser)):
             print("You may only have one profile")
@@ -291,9 +298,10 @@ class ProfilesCreation:
             print("\n Your profile has been created!")
             curUser = accounts.currentUser
             self.addProfileUser(curUser)
+            accounts.updateProfileBool(curUser)
 
     
-    def viewProfile(self):
+    def viewProfiles(self):
         rows = self._cur.execute("SELECT * FROM profiles")
         for row in rows:
             print(f"User: {row[0]}")
@@ -303,6 +311,23 @@ class ProfilesCreation:
             print(f"Info: {row[4]}")
             print(f"Experience: {row[5]}")
             print(f"Education: {row[6]}")
+    
+    def viewFriendProfile(self, user_name):
+        rows = self._cur.execute("SELECT * FROM profiles")
+        for row in rows:
+            if(row[0] == user_name):
+                print(f"User: {row[0]}")
+                print(f"Title: {row[1]}")
+                print(f"Major: {row[2]}")
+                print(f"University: {row[3]}")
+                print(f"Info: {row[4]}")
+                print(f"Experience: {row[5]}")
+                print(f"Education: {row[6]}")
+        
+        
+
+        
+
             
     
     
@@ -358,7 +383,7 @@ class Friends:
         row = rows.fetchone()
         if row[0] == 0: return False
         return True
-
+    
     def commit(self):
         self._db.commit()
 
@@ -398,6 +423,8 @@ def friendRequestsList():
         flag = False if input("Do you want to accept more requests? (y/n)") == 'n' else True
 
 def showMyNetwork():
+    profileInput = NULL
+    profileFriendUser = NULL
     list_of_friends = friends.listOfFriends(accounts.currentUser)
     if list_of_friends == []:
         return
@@ -410,8 +437,37 @@ def showMyNetwork():
         i = 0
         for friend in list_of_friends:
             account = accounts.searchAccount(friend[0])
-            print(f"{i}: {account[2]} {account[3]}")
+            if account[10] == True:
+                print("did i get the profile check")
+                print(f"{i}: {account[2]} {account[3]} User Has Profile")
+            else:
+                print("did i not get the profile check")
+                print(f"{i}: {account[2]} {account[3]}")
+        
             i += 1
+        profileInput = input("Would you like to view a friend's profile? Enter 1(y) or 0(n): ")
+        print("did i finish input?")
+        while(profileInput != 0):
+            print("am i in while")
+            profileFriendUser = input("Please input the username of the profile you'd like to view: ")
+            if (accounts.checkExistingUsername(profileFriendUser)):
+                print("Please check spelling of friends user name")
+
+            elif(not friends.checkIfConnected(accounts.currentUser, profileFriendUser)):
+                print("Please make sure you are connected with the User")
+            elif(profiles.checkExistingUsername(profileFriendUser)):
+                print("User does not have a profile")
+                profileInput = input("Would you like to continue to try and view a friend's profile? Enter 1(y) or 0(n)")
+                if(profileInput == 1):
+                    continue
+                else:
+                    profileInput = 0    
+            else:
+                profiles.viewFriendProfile(profileFriendUser)
+                profileInput = 0
+            
+
+        
         if input("Do you want to disconnect with anyone? (y/n)") == 'n':
             break
         friendidx = int(input("Please enter the friend number you would like to disconnect: "))
