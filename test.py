@@ -368,3 +368,44 @@ def test_ProfileMajor():
     assert rows.fetchall()[0][0] == "Computer Science"
 
 # Check for University name convention
+def test_ProfileUni():
+    global accounts
+    global profiles
+    accounts = incollege.AccountCreation("test")
+    profiles = incollege.ProfilesCreation("test")
+    accounts.currentUser = "userTest1"
+    profiles.addProfileUser("userTest1")
+    profiles.addUni(accounts.currentUser, "uNivErSity oF fLoRiDa")
+    rows = profiles._cur.execute("SELECT university FROM profiles WHERE profile_user = ?", (accounts.currentUser,))
+    assert rows.fetchall()[0][0] == "University Of Florida"
+
+def test_Info():
+    global accounts
+    global profiles
+    accounts = incollege.AccountCreation("test")
+    profiles = incollege.ProfilesCreation("test")
+    accounts.currentUser = "userTest1"
+    profiles.addProfileUser("userTest1")
+    profiles.addInfo(accounts.currentUser)
+    rows = profiles._cur.execute("SELECT information FROM profiles WHERE profile_user = ?", (accounts.currentUser,))
+
+def test_Exp():
+    global accounts
+    global profiles
+    accounts = incollege.AccountCreation("test")
+    profiles = incollege.ProfilesCreation("test")
+    accounts.currentUser = "userTest1"
+    profiles.addProfileUser("userTest1")
+    profiles.addExp(accounts.currentUser)
+    rows = profiles._cur.execute("SELECT experience FROM profiles WHERE profile_user = ?", (accounts.currentUser,))
+
+def test_EDU():
+    global accounts
+    global profiles
+    accounts = incollege.AccountCreation("test")
+    profiles = incollege.ProfilesCreation("test")
+    accounts.currentUser = "userTest1"
+    profiles.addProfileUser("userTest1")
+    profiles.addEdu(accounts.currentUser)
+    rows = profiles._cur.execute("SELECT education FROM profiles WHERE profile_user = ?", (accounts.currentUser,))
+
