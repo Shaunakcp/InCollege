@@ -379,7 +379,7 @@ def test_ProfileUni():
     rows = profiles._cur.execute("SELECT university FROM profiles WHERE profile_user = ?", (accounts.currentUser,))
     assert rows.fetchall()[0][0] == "University Of Florida"
 
-def test_Info():
+def test_ProfileInfo():
     global accounts
     global profiles
     accounts = incollege.AccountCreation("test")
@@ -389,7 +389,7 @@ def test_Info():
     profiles.addInfo(accounts.currentUser)
     rows = profiles._cur.execute("SELECT information FROM profiles WHERE profile_user = ?", (accounts.currentUser,))
 
-def test_Exp():
+def test_ProfileExp():
     global accounts
     global profiles
     accounts = incollege.AccountCreation("test")
@@ -399,7 +399,7 @@ def test_Exp():
     profiles.addExp(accounts.currentUser)
     rows = profiles._cur.execute("SELECT experience FROM profiles WHERE profile_user = ?", (accounts.currentUser,))
 
-def test_EDU():
+def test_ProfileEDU():
     global accounts
     global profiles
     accounts = incollege.AccountCreation("test")
