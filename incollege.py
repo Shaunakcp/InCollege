@@ -79,7 +79,7 @@ class AccountCreation:        # class for creating accounts
         self.commit()
 
     def updateProfileBool(self, userName):
-        self._cur.execute("UPDATE accounts SET profile_bool = ? WHERE username = ?", (profiles.checkExistingUsername(userName), accounts.currentUser))
+        self._cur.execute("UPDATE accounts SET profile_bool = ? WHERE username = ?", ('True', accounts.currentUser))
         self.commit()
 
     def displayAccount(self):            # print all account and password
@@ -297,22 +297,12 @@ class ProfilesCreation:
         else:    
             print("\n Your profile has been created!")
             curUser = accounts.currentUser
-            self.addProfileUser(curUser)
-            accounts.updateProfileBool(curUser)
+            self.addProfileUser(curUser) #user creates profile
+            accounts.updateProfileBool(curUser) # user profilebool = true /// not working
 
     
-    def viewProfiles(self):
-        rows = self._cur.execute("SELECT * FROM profiles")
-        for row in rows:
-            print(f"User: {row[0]}")
-            print(f"Title: {row[1]}")
-            print(f"Major: {row[2]}")
-            print(f"University: {row[3]}")
-            print(f"Info: {row[4]}")
-            print(f"Experience: {row[5]}")
-            print(f"Education: {row[6]}")
-    
-    def viewFriendProfile(self, user_name):
+   
+    def viewProfile(self, user_name):
         rows = self._cur.execute("SELECT * FROM profiles")
         for row in rows:
             if(row[0] == user_name):
@@ -324,12 +314,6 @@ class ProfilesCreation:
                 print(f"Experience: {row[5]}")
                 print(f"Education: {row[6]}")
         
-        
-
-        
-
-            
-    
     
     def commit(self):
         self._db.commit()
@@ -437,19 +421,16 @@ def showMyNetwork():
         i = 0
         for friend in list_of_friends:
             account = accounts.searchAccount(friend[0])
-            if account[10] == True:
-                print("did i get the profile check")
+            if account[10] == "True":
                 print(f"{i}: {account[2]} {account[3]} User Has Profile")
             else:
-                print("did i not get the profile check")
                 print(f"{i}: {account[2]} {account[3]}")
         
             i += 1
         profileInput = input("Would you like to view a friend's profile? Enter 1(y) or 0(n): ")
-        print("did i finish input?")
+    
         while(profileInput != 0):
-            print("am i in while")
-            profileFriendUser = input("Please input the username of the profile you'd like to view: ")
+            profileFriendUser = input("Please input the friend index you'd like to friend ")
             if (accounts.checkExistingUsername(profileFriendUser)):
                 print("Please check spelling of friends user name")
 
@@ -463,7 +444,7 @@ def showMyNetwork():
                 else:
                     profileInput = 0    
             else:
-                profiles.viewFriendProfile(profileFriendUser)
+                profiles.viewProfile(profileFriendUser)
                 profileInput = 0
             
 
@@ -660,9 +641,9 @@ def incollegeImportantLinks():          # Menu to display InCollege Important Li
 # def makeProfile(self):
 #     Profiles.createProfile(self)
 def createOrViewProfileMenu():
-    option = int(input("\nPlease make a profile related selection:\n1. View Profile\n2. Create a Profile\n3. edit profile \n4.Back\n-> "))
+    option = int(input("\nPlease make a profile related selection:\n1. View Profiles\n2. Create a Profile\n3. edit profile \n4.Back\n-> "))
     if option == 1:
-        profiles.viewProfile()
+        profiles.viewProfile(accounts.currentUser)
         createOrViewProfileMenu()  
     elif option == 2:
         profiles.createProfile()
