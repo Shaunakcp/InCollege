@@ -352,7 +352,6 @@ def test_ProfileTitle():
     profiles.addProfileUser("userTest1")
     profiles.addTitle(accounts.currentUser, "SWE")
     rows = profiles._cur.execute("SELECT title FROM profiles WHERE profile_user = ?", (accounts.currentUser,))
-
     assert rows.fetchall()[0][0] == "SWE"
 
 # Check for Major name convention
@@ -375,10 +374,11 @@ def test_ProfileUni():
     profiles = incollege.ProfilesCreation("test")
     accounts.currentUser = "userTest1"
     profiles.addProfileUser("userTest1")
-    profiles.addUni(accounts.currentUser, "uNivErSity oF fLoRiDa")
+    profiles.addUni(accounts.currentUser, "uNiVerSity oF fLoridA")
     rows = profiles._cur.execute("SELECT university FROM profiles WHERE profile_user = ?", (accounts.currentUser,))
     assert rows.fetchall()[0][0] == "University Of Florida"
 
+# Check for Info
 def test_ProfileInfo():
     global accounts
     global profiles
@@ -386,9 +386,11 @@ def test_ProfileInfo():
     profiles = incollege.ProfilesCreation("test")
     accounts.currentUser = "userTest1"
     profiles.addProfileUser("userTest1")
-    profiles.addInfo(accounts.currentUser)
-    rows = profiles._cur.execute("SELECT information FROM profiles WHERE profile_user = ?", (accounts.currentUser,))
+    profiles.addInfo(accounts.currentUser, "I'm a Sophomore")
+    rows = profiles._cur.execute("SELECT info FROM profiles WHERE profile_user = ?", (accounts.currentUser,))
+    assert rows.fetchall()[0][0] == "I'm a Sophomore"
 
+# Check for Experience
 def test_ProfileExp():
     global accounts
     global profiles
@@ -396,16 +398,37 @@ def test_ProfileExp():
     profiles = incollege.ProfilesCreation("test")
     accounts.currentUser = "userTest1"
     profiles.addProfileUser("userTest1")
-    profiles.addExp(accounts.currentUser)
+    profiles.addExp(accounts.currentUser, "I worked at USF for 10 years")
     rows = profiles._cur.execute("SELECT experience FROM profiles WHERE profile_user = ?", (accounts.currentUser,))
+    assert rows.fetchall()[0][0] == "I worked at USF for 10 years"
 
-def test_ProfileEDU():
+# Check for Education
+def test_ProfileEdu():
     global accounts
     global profiles
     accounts = incollege.AccountCreation("test")
     profiles = incollege.ProfilesCreation("test")
     accounts.currentUser = "userTest1"
     profiles.addProfileUser("userTest1")
-    profiles.addEdu(accounts.currentUser)
+    profiles.addEdu(accounts.currentUser, "USF from 2020 to 2024")
     rows = profiles._cur.execute("SELECT education FROM profiles WHERE profile_user = ?", (accounts.currentUser,))
+    assert rows.fetchall()[0][0] == "USF from 2020 to 2024"
+
+# Check for modifications
+def test_ProfileModification():
+    global accounts
+    global profiles
+    accounts = incollege.AccountCreation("test")
+    profiles = incollege.ProfilesCreation("test")
+    accounts.currentUser = "userTest1"
+    profiles.addProfileUser("userTest1")
+    profiles.addTitle(accounts.currentUser, "IT Support")
+    profiles.addMajor(accounts.currentUser, "iNforMatIon tEchNolOgy")
+    profiles.addUni(accounts.currentUser, "uNiVerSity oF sOuth fLoridA")
+    profiles.addInfo(accounts.currentUser, "I'm a Senior")
+    profiles.addExp(accounts.currentUser, "I worked at USF for 2 years")
+    profiles.addEdu(accounts.currentUser, "USF from 2020 to 2023")
+    rows = profiles._cur.execute("SELECT * FROM profiles WHERE profile_user = ?", (accounts.currentUser,))
+    assert rows.fetchall()[0] == (accounts.currentUser, "IT Support", "Information Technology", "University Of South Florida", "I'm a Senior", "I worked at USF for 2 years", "USF from 2020 to 2023")
+
 
