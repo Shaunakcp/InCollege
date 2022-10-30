@@ -1,98 +1,145 @@
 import sqlite3           # database used to store account & job information
 
-class JobPosting:            # class for creating job listings
-    def __init__(self, dbName):
+class JobApplication:
+    def __init__(self, dbName): # create 2 tables for job applications and application information
         self._db = sqlite3.connect(f"./{dbName}.db")
         self._cur = self._db.cursor()
-        # Creating a table in SQL file to store account info
-        self._cur.execute("CREATE TABLE IF NOT EXISTS jobs ('title' TEXT NOT NULL, 'description' TEXT NOT NULL, 'employer' TEXT NOT NULL, 'location' TEXT NOT NULL, 'salary' FLOAT NOT NULL, 'poster' TEXT NOT NULL)")
-        
-    def checkLimit(self): # Checking whether the number of jobs has reached the limit of 5
-        cursor = self._cur.execute("SELECT COUNT(*) FROM jobs")
-        for row in cursor:
-            if row[0] >= 10:
-                return False
-        return True
+        self._cur.execute("CREATE TABLE IF NOT EXISTS jobapps ('appID' INTEGER PRIMARY KEY AUTOINCREMENT, 'applicantID' TEXT NOT NULL, 'jobID' INTEGER NOT NULL, 'status' TEXT NOT NULL)")
+        self._cur.execute("CREATE TABLE IF NOT EXISTS appinfos ('appID' INTEGER NOT NULL, 'monGrad' INTEGER, 'dayGrad' INTEGER, 'yearGrad' INTEGER, 'monStart' INTEGER, 'dayStart' INTEGER, 'yearStart' INTEGER, 'details' TEXT NOT NULL, FOREIGN KEY (appID) REFERENCES jobapps (appID) ON DELETE CASCADE)")
+
+    def checkIfApplied(self, applicant_ID, job_ID): # check whether the user already applied for the job
+        rows = self._cur.execute("SELECT COUNT(*) FROM jobapps WHERE applicantID = ? AND jobID = ? AND status = ?", (applicant_ID, job_ID, 'applied'))
+        for row in rows:
+            if row[0] != 0:
+                return True
+        return False
     
-    def addJob(self, title, description, employer, location, salary, poster):        # Add job to SQL file
-        query = "INSERT INTO jobs ('title', 'description', 'employer', 'location', 'salary', 'poster') VALUES (?, ?, ?, ?, ?, ?)"
-        self._cur.execute(query, (title, description, employer, location, salary, poster))
+    def checkIfSaved(self, applicant_ID, job_ID): # check whether the user already saved the job
+        rows = self._cur.execute("SELECT COUNT(*) FROM jobapps WHERE applicantID = ? AND jobID = ? AND status = ?", (applicant_ID, job_ID, 'saved'))
+        for row in rows:
+            if row[0] != 0:
+                return True
+        return False
+
+    def createApplication(self, applicant_ID, job_ID): # create an application with status "applied" in jobapps table
+        self._cur.execute("INSERT INTO jobapps ('appID', 'applicantID', 'jobID', 'status') VALUES (NULL, ?, ?, ?)", (applicant_ID, job_ID, 'applied'))
         self.commit()
 
-    def createAJob(self):        # Function to create job posting
-        if not self.checkLimit():
-            return "ERROR: All permitted jobs have been created, please come back later"
-        print("\nPost your job")
-        title = input("Title: ")
-        description = input("Description: ")
-        employer = input("Employer: ")
-        location = input("Location: ")
-        salary = float(input("Salary: $"))
-        self.addJob(title, description, employer, location, salary, accounts.currentUser)
-        return "\n--Job has been posted--"
+    def saveAJob(self, applicant_ID, job_ID): # create an application with status "saved" in jobapps table
+        self._cur.execute("INSERT INTO jobapps ('appID', 'applicantID', 'jobID', 'status') VALUES (NULL, ?, ?, ?)", (applicant_ID, job_ID, 'saved'))
+        self.commit()
 
-    def applyForJob(jobTitle): # func to applying for a job
-        return
-        
-    def displayAllJobs(self):    # Func displays all jobs listed
-        cursor = self._cur.execute("SELECT * FROM jobs")
-        jobCounter = 1
-        applySelection = 0
-        for row in cursor:    # printing only titles of jobs
-            print(f"\nJob # {jobCounter}:")
-            print(f"Title: {row[0]}")
-            jobCounter+= 1
-
-        selectedJob = input("\nEnter a job name to view more details: ")    # selecting a job to view more info
-        
-        sql_select_query = """select * from jobs where title = ?"""
-        cursor.execute(sql_select_query, (selectedJob,))
-        records = cursor.fetchall()
-        print(f"\nDisplaying {selectedJob} information: ")
-        for row in records:
-            print(f"  Title: {row[0]}")
-            jobTitle = {row[0]}
-            print(f"  Description: {row[1]}")
-            print(f"  Employer: {row[2]}")
-            print(f"  Location: {row[3]}")
-            print(f"  Salary: ${row[4]:,.2f}")
-        
-        
-        if accounts.currentUser != None: # if user logged in they can apply for jobs
-            applySelection = int(input("\nWould you like to apply for this job? (1. Yes, 2. No): ")) # asking if user wants to apply for selected job.
-
-        if applySelection == 1: # if user wants to apply for job, then apply
-            self.applyForJob(jobTitle)
-            
-    def deleteJobPosting(self): # func to delete specific job that current user has posted
-        cursor = self._cur.execute("SELECT * FROM jobs WHERE poster=:c", {"c": accounts.currentUser}) # Cursor reads only jobs from current user
-        jobCounter = 1
-        currUsersJobs = [] # array storing curr users jobs
-        for row in cursor:    # print curr users jobs
-            print(f"\nJob # {jobCounter}:")
-            print(f"Title: {row[0]}")
-            print(f"Description: {row[1]}")
-            print(f"Employer: {row[2]}")
-            print(f"Location: {row[3]}")
-            print(f"Salary: ${row[4]:,.2f}")
-            currUsersJobs.append(row[0])     # add job name to list of users jobs
-            jobCounter+= 1
-
-        jobSelection = int(input("\nSelect the job number you want to be deleted: "))
-
-        sql_update_query = "DELETE FROM jobs WHERE title = ?"
-        cursor.execute(sql_update_query, (currUsersJobs[jobSelection-1],))
-        print("job deleted successfully")
-
+    def changeSavedToApplied(self, applicant_ID, job_ID): # change status from saved to applied
+        self._cur.execute("UPDATE jobapps SET 'status' = ? WHERE applicantID = ? AND jobID = ?", ("applied", applicant_ID, job_ID))
+        self.commit()
     
+    def unsaveAJob(self, applicant_ID, job_ID): # delete the application that is marked save from jobapps table
+        self._cur.execute("DELETE FROM jobapps WHERE applicantID = ? AND jobID = ?", (applicant_ID, job_ID))
+        self.commit()
 
+    def updateApplicationInfo(self, applicant_ID, job_ID, mon_grad, day_grad, year_grad, mon_start, day_start, year_start, details): # insert information about application to appinfo table after the application has been triggered
+        rows = self._cur.execute("SELECT appID FROM jobapps WHERE applicantID = ? and jobID = ?", (applicant_ID, job_ID))
+        appID = rows.fetchone()[0]
+        self._cur.execute("INSERT INTO appinfos (appID, monGrad, dayGrad, yearGrad, monStart, dayStart, yearStart, details) VALUES (?,?,?,?,?,?,?,?)", (appID, mon_grad, day_grad, year_grad, mon_start, day_start, year_start, details))
+        self.commit()
+
+    def deletedJobNoti(self, applicant_ID): # check if there's any jobs being deleted by the employer and then refresh the jobapps table and appinfo table by deleting those expired records
+        rows = self._cur.execute("SELECT COUNT(*) FROM jobapps WHERE applicantID = ? AND status = ?", (applicant_ID, 'deleted'))
+        flag = False
+        for row in rows:
+            if row[0] != 0:
+                flag = True
+                break
+        self._cur.execute("DELETE FROM jobapps WHERE applicantID = ? AND status = ?", (applicant_ID, 'deleted'))
+        self.commit()
+        return flag
+    
     def commit(self):
         self._db.commit()
 
     def close(self):
         self._cur.close()
         self._db.close()
+
+
+class JobPosting:            # class for creating job listings
+    def __init__(self, dbName):
+        self._db = sqlite3.connect(f"./{dbName}.db")
+        self._cur = self._db.cursor()
+        # Creating a table in SQL file to store account info
+        self._cur.execute("CREATE TABLE IF NOT EXISTS jobs ('jobID' INTEGER PRIMARY KEY AUTOINCREMENT, 'title' TEXT NOT NULL, 'description' TEXT NOT NULL, 'employer' TEXT NOT NULL, 'location' TEXT NOT NULL, 'salary' FLOAT NOT NULL, 'poster' TEXT NOT NULL)")
+        
+    def checkLimit(self): # Checking whether the number of jobs has reached the limit of 5
+        rows = self._cur.execute("SELECT COUNT(*) FROM jobs")
+        for row in rows:
+            if row[0] >= 10:
+                return False
+        return True
+    
+    def addJob(self, title, description, employer, location, salary, poster):        # Add job to SQL file
+        query = "INSERT INTO jobs ('jobID', 'title', 'description', 'employer', 'location', 'salary', 'poster') VALUES (NULL, ?, ?, ?, ?, ?, ?)"
+        self._cur.execute(query, (title, description, employer, location, salary, poster))
+        self.commit()
+
+    def createAJob(self, current_user):        # Function to create job posting
+        if not self.checkLimit():
+            print("ERROR: All permitted jobs have been created, please come back later")
+            return
+        print("\nPost your job")
+        title = input("Title: ")
+        description = input("Description: ")
+        employer = input("Employer: ")
+        location = input("Location: ")
+        salary = float(input("Salary: $"))
+        self.addJob(title, description, employer, location, salary, current_user)
+        print("\n--Job has been posted--")
+
+    def selfApplyCheck(self, current_user, job_ID): # func checks if curr_user is applying to own job
+        rows = self._cur.execute("SELECT COUNT(*) FROM jobs WHERE poster = ? AND jobID = ?", (current_user, job_ID))
+        for row in rows:
+            if row[0] != 0:
+                return True
+        return False    
+
+    def myJobPostings(self, current_user):       # func returns all of curr_user's posted jobs
+        rows = self._cur.execute("SELECT * FROM jobs WHERE poster = ?", (current_user,))
+        return rows.fetchall()
+
+    def displayAllJobs(self):    # func returns all posted jobs
+        rows = self._cur.execute("SELECT * FROM jobs")
+        return rows.fetchall()
+
+    def displayAppliedJobs(self, applicant_ID):    # func returns all jobs that curr_user applied to
+        rows = self._cur.execute("SELECT jobs.* FROM jobs, jobapps WHERE jobapps.jobID = jobs.jobID AND jobapps.applicantID = ? AND jobapps.status = ?", (applicant_ID, 'applied'))
+        return rows.fetchall()
+
+    def displaySavedJobs(self, applicant_ID):    # func returns all jobs that curr_user saved
+        rows = self._cur.execute("SELECT jobs.* FROM jobs, jobapps WHERE jobapps.jobID = jobs.jobID AND jobapps.applicantID = ? AND jobapps.status = ?", (applicant_ID, 'saved'))
+        return rows.fetchall()
+    
+    def displayAJob(self, job_ID):            # func displays details about a job listing
+        rows = self._cur.execute("SELECT * FROM jobs WHERE jobID = ?", (job_ID,))
+        row = rows.fetchone()
+        print(f"Title: {row[1]}")
+        print(f"Description: {row[2]}")
+        print(f"Employer: {row[3]}")
+        print(f"Location: {row[4]}")
+        print(f"Salary: ${row[5]:,.2f}")
+
+    def deleteAJob(self, job_ID):        # func deletes job
+        self._cur.execute("DELETE FROM jobs WHERE jobID = ?", (job_ID,))
+        self.commit()
+        self._cur.execute("UPDATE jobapps SET 'status' = ? WHERE jobID = ?", ('deleted', job_ID)) # updates job status in jobapps table to 'deleted'
+        self.commit()
             
+    def commit(self):
+        self._db.commit()
+
+    def close(self):
+        self._cur.close()
+        self._db.close()
+
+
 class AccountCreation:        # class for creating accounts
     def __init__(self, dbName):
         self._db = sqlite3.connect(f"./{dbName}.db")
@@ -220,18 +267,18 @@ class AccountCreation:        # class for creating accounts
             return False
         return True
 
-    def getLanguage(self):
+    def getLanguage(self):        # returns the language preprences of curr_user
         if self.currentUser == None:
             return self.language
         rows = self._cur.execute("SELECT languagepreference FROM accounts WHERE username = ?", (self.currentUser,))
         res = rows.fetchall()
         return res[0][0]
 
-    def updateGuestControls(self, email, sms, adfeatures):
+    def updateGuestControls(self, email, sms, adfeatures):        # updates guest controls for curr user
         self._cur.execute("UPDATE accounts SET emailnoti = ?, sms = ?, adfeatures = ? WHERE username = ?", (email, sms, adfeatures, self.currentUser))
         self.commit()
 
-    def updateLanguage(self, lang):
+    def updateLanguage(self, lang):        # update lang pref of curr_user
         self.language = lang
         self._cur.execute("UPDATE accounts SET languagepreference = ? WHERE username = ?", (lang, self.currentUser))
         self.commit()
@@ -243,36 +290,36 @@ class ProfilesCreation:
         #creates a table in sql for profiles info
         self._cur.execute("CREATE TABLE IF NOT EXISTS profiles ('profile_user' TEXT NOT NULL,'title' TEXT NOT NULL, 'major' TEXT NOT NULL, 'university' TEXT NOT NULL, 'info' TEXT NOT NULL, 'experience' TEXT NOT NULL, 'education' TEXT NOT NULL)") 
     
-    def addProfileUser(self, profile_user):
+    def addProfileUser(self, profile_user):    # Add a new user profile. default to null
         query = "INSERT INTO profiles ('profile_user', 'title','major','university','info','experience','education') VALUES (?,?,?,?,?,?,?)"
         self._cur.execute(query, (profile_user, "NULL", "NULL","NULL", "NULL", "NULL", "NULL"))
         self.commit()
 
-    def addTitle(self, currentUser, title):
+    def addTitle(self, currentUser, title):    # add profile info: title
         self._cur.execute("UPDATE profiles SET title = ? WHERE profile_user = ?", (title, currentUser))
         self.commit()
 
-    def addMajor(self, currentUser, major):
+    def addMajor(self, currentUser, major):     # add profile info: major
         self._cur.execute("UPDATE profiles SET major = ? WHERE profile_user = ?", (major.title(), currentUser))
         self.commit()
     
-    def addUni(self, currentUser, university):
+    def addUni(self, currentUser, university):     # add profile info: University
         self._cur.execute("UPDATE profiles SET university = ? WHERE profile_user = ?", (university.title(), currentUser))
         self.commit()
     
-    def addInfo(self, currentUser, info):
+    def addInfo(self, currentUser, info):     # add profile info: information
         self._cur.execute("UPDATE profiles SET info = ? WHERE profile_user = ?", (info, currentUser))
         self.commit()
     
-    def addExp(self, currentUser, experience):
+    def addExp(self, currentUser, experience):     # add profile info: experience
         self._cur.execute("UPDATE profiles SET experience = ? WHERE profile_user = ?", (experience, currentUser))
         self.commit()
     
-    def addEdu(self, currentUser, education):
+    def addEdu(self, currentUser, education):     # add profile info: education
         self._cur.execute("UPDATE profiles SET education = ? WHERE profile_user = ?", (education, currentUser))
         self.commit()
     
-    def experienceInput(self):
+    def experienceInput(self):    # input profile info: experience
         experience = (input("Enter job title: "))
         experience = experience + "\n"  + input("Enter employer: ")
         experience = experience + "\n"  + input("Enter Start Date: ") + input("Enter End Date: ")
@@ -280,13 +327,13 @@ class ProfilesCreation:
         experience = experience + "\n"  + input("Enter job description: ")
         return experience
 
-    def educationInput(self):
+    def educationInput(self):    # input profile info: education
         education = (input("Enter School Name: "))
         education = education + input("Enter degree: ")
         education = education + input("Years attended: ")
         return education
     
-    def editProfile(self):
+    def editProfile(self):    # edit curr_user profile information
         self.viewProfile(accounts.currentUser)
         selection = int(input("\nPlease select a profile edit option:\n1. Edit or enter Title\n2. Edit or enter Major\n3. Edit or enter University\n4. Edit or enter Info\n5. Edit or enter Experience \n6. Edit or enter Education\n7. Save and Exit\n-> "))
         while selection != 7:
@@ -324,8 +371,8 @@ class ProfilesCreation:
             return True
         return False
         
-    def createProfile(self):
-        if (not profiles.checkExistingUsername(accounts.currentUser)):
+    def createProfile(self):        # create a new user profile for curr_user
+        if (not profiles.checkExistingUsername(accounts.currentUser)):    # check if curr_user already has a profile
             print("You may only have one profile")
         else:    
             curUser = accounts.currentUser
@@ -333,7 +380,7 @@ class ProfilesCreation:
             self.editProfile()
             print("\n Your profile has been created!")
 
-    def viewProfile(self, user_name):
+    def viewProfile(self, user_name):        # view profile of a user
         rows = self._cur.execute("SELECT * FROM profiles WHERE profile_user = ?", (user_name,))
         for row in rows:
             account = accounts.searchAccount(row[0])
@@ -386,13 +433,13 @@ class Friends:
         rows = self._cur.execute("SELECT * FROM accounts WHERE lastname = ? OR university = ? OR major = ?", (lastName, university, major))
         return rows.fetchall()
 
-    def checkIfConnected(self, current_user, friendsName):
+    def checkIfConnected(self, current_user, friendsName):        # check if curr_user is friends with another user
         rows = self._cur.execute("SELECT COUNT(*) FROM friends WHERE logged_in_user = ? AND friend = ? AND friend_status = 'accepted'", (current_user, friendsName))
         row = rows.fetchone()
         if row[0] == 0: return False
         return True
 
-    def checkIfPending(self, current_user, friendsName):
+    def checkIfPending(self, current_user, friendsName):        # check if friend request from curr_user to another user is pending
         rows = self._cur.execute("SELECT COUNT(*) FROM friends WHERE logged_in_user = ? AND friend = ? AND friend_status = 'pending'", (current_user, friendsName))
         row = rows.fetchone()
         if row[0] == 0: return False
@@ -405,7 +452,7 @@ class Friends:
         self._cur.close()
         self._db.close()
 
-def friendRequests():
+def friendRequests():        # print list of friend requests. Allow user to accept or decline requests.
     list_of_friends = friends.listOfPendingFriends(accounts.currentUser)
     if list_of_friends == []:
         return
@@ -415,8 +462,9 @@ def friendRequests():
         accept = input("-> ")
         if accept == "y":
             friends.acceptFriend(accounts.currentUser, friend[0])
+        # TODO: implement removal from friend reqs. if 'n'??
 
-def friendRequestsList():
+def friendRequestsList():    #  print list of friend requests. Allow user to accept or decline requests
     list_of_friends = friends.listOfPendingFriends(accounts.currentUser)
     if list_of_friends == []:
         print("You don't have any request")
@@ -436,7 +484,7 @@ def friendRequestsList():
         friends.acceptFriend(accounts.currentUser, list_of_friends[friendidx][0])
         flag = False if input("Do you want to accept more requests? (y/n)") == 'n' else True
 
-def showMyNetwork():
+def showMyNetwork(): # print current users friend connections
     list_of_friends = friends.listOfFriends(accounts.currentUser)
     if list_of_friends == []:
         return
@@ -479,7 +527,7 @@ def showMyNetwork():
         friends.deleteAFriend(accounts.currentUser, list_of_friends[friendidx][0])
         flag = False if input("Do you want to continue viewing your connections? (y/n)") == 'n' else True
         
-def searchForFriends():
+def searchForFriends():    # allows curr user to search for a friend by name, major, and uni
     lastName = input("Please enter your friends' last name: ")
     university = input("Please enter their institution name (USF, UCF, FSU, UF): ")
     major = input("Please enter their major in acronym format (CS, CYS, IT, CPE): ")
@@ -508,7 +556,7 @@ def searchForFriends():
             friends.addFriend(accounts.currentUser, friendsUsername)
         flag = False if input("Do you want to stop searching for friends? (y/n)") == 'y' else True
 
-def networking():
+def networking():    # Networking menu
     option = int(input("1. Search for Friends\n2. View Friend Requests\n3. Show my Network\n4. Back\n-> "))
     while True:
         if option == 1:
@@ -522,7 +570,7 @@ def networking():
         option = int(input("1. Search for Friends\n2. View Friend Requests\n3. Show my Network\n4. Back\n-> "))
 
 def initialScreen():        # Home screen for InCollege. Leads to all others
-    print("\nPlease choose between the options:\n1. Create new account\n2. Sign-In to existing account\n3. Useful Links\n4. InCollege Important Links\n5. Quit")
+    print("\nPlease choose between the options:\n1. Create new account\n2. Sign in to existing account\n3. Useful Links\n4. InCollege Important Links\n5. Quit")
     option = int(input("-> "))
     while option != 5:
         if option == 1:
@@ -534,31 +582,28 @@ def initialScreen():        # Home screen for InCollege. Leads to all others
             usefulLinks()
         elif option == 4:
             incollegeImportantLinks()
-        print("Please choose between the options:\n1. Create new account\n2. Sign-In to existing account\n3. Useful Links\n4. InCollege Important Links\n5. Back")
+        print("Please choose between the options:\n1. Create new account\n2. Sign in to existing account\n3. Useful Links\n4. InCollege Important Links\n5. Back")
         option = int(input("-> "))
     print("\nNow exiting, have a good day.")
 
 def openingTestimonial():    # prints success story and directs user to advertisement video
     print("Hi College Student!\nIm Rowena, and when I was a college sophmore, InCollege got me a job at Google, now only 4 months later, I'm the CEO!\nWithout InCollege, I could have never done it!\n")
-    option = int(input("1. Check out how YOU will become a FANG CEO with InCollege!\n2. Sign-In or SignUp Screen\n3. Job search/internship \n4. Search for friends\n5. Useful Links\n6. InCollege Important Links\n7. Quit\n-> "))
+    option = int(input("1. Check out how YOU will become a FANG CEO with InCollege!\n2. Login or SignUp Screen\n3. Search for friends\n4. Useful Links\n5. InCollege Important Links\n6. Quit\n-> "))
     while True:
         if option == 1:
             print("\n--video is now playing--\n")
-            initialScreen()
         elif option == 2:
             initialScreen()
         elif option == 3:
-            jobs.displayAllJobs()
-        elif option == 4:
             searchForFriends()
-        elif option == 5:
+        elif option == 4:
             usefulLinks()
-        elif option == 6:
+        elif option == 5:
             incollegeImportantLinks()
-        elif option == 7:
+        elif option == 6:
             quit("\n--Leaving InCollege--\n")
-'''        print("Hi College Student!\nIm Rowena, and when I was a college sophmore, InCollege got me a job at Google, now only 4 months later, I'm the CEO!\nWithout InCollege, I could have never done it!\n")
-        option = int(input("1. Check out how YOU will become a FANG CEO with InCollege!\n2. Sign-In or SignUp Screen\n3. Search for friends\n4. Useful Links\n5. InCollege Important Links\n6. Quit\n-> "))'''
+        print("Hi College Student!\nIm Rowena, and when I was a college sophmore, InCollege got me a job at Google, now only 4 months later, I'm the CEO!\nWithout InCollege, I could have never done it!\n")
+        option = int(input("1. Check out how YOU will become a FANG CEO with InCollege!\n2. Login or SignUp Screen\n3. Search for friends\n4. Useful Links\n5. InCollege Important Links\n6. Quit\n-> "))
 
 def signIn():            # function to sign in user.
     userName = input("\nPlease type in your Username: ")
@@ -568,7 +613,6 @@ def signIn():            # function to sign in user.
     while not accounts.checkPassword(userName, password):
         password = input(f"\nERROR: Incorrect password\nEnter the correct password for {userName}: ")
     accounts.currentUser = userName
-    print(f"\nWelcome back {accounts.currentUser}!")
     friendRequests()
 
 def actionsMenu():        # Menu after logging in. Sub to initialScreen()
@@ -593,8 +637,7 @@ def actionsMenu():        # Menu after logging in. Sub to initialScreen()
             return
         selection = int(input("\nPlease select a menu option:\n1. Find or Post a job\n2. Find a friend\n3. Learn a new skill\n4. Useful Links\n5. InCollege Important Links\n6. Profile Management\n7. Sign Out\n-> "))
         
-
-def usefulLinks():
+def usefulLinks():    # Menu for incollege
     print("\nPlease choose between the options:\n1. General\n2. Browse InCollege\n3. Business Solutions\n4. Directories\n5. Back")
     option = int(input("-> "))
     while True:
@@ -636,8 +679,6 @@ def generalMenu():          # Menu to display General Menu's available options/s
             return
         selection = int(input("\nPlease select a menu option:\n1. Sign Up\n2. Help Center\n3. About\n4. Press\n5. Blog\n6. Careers\n7. Developers\n8. Back\n-> "))
         
-
-
 def incollegeImportantLinks():          # Menu to display InCollege Important Links
     link = int(input("\nPlease select a menu option:\n1. Copyright Notice\n2. About\n3. Accessibility\n4. User Agreement\n5. Privacy Policy\n6. Cookie Policy\n7. Copyright Policy\n8. Brand Policy\n9. Languages\n10. Back\n-> "))
     while True:
@@ -682,22 +723,146 @@ def createOrViewProfileMenu():
             createOrViewProfileMenu()
         option = int(input("\nPlease make a profile related selection:\n1. View Profiles\n2. Create a Profile\n3. Edit profile \n4. Back\n-> "))
 
-
-
 def createOrFindJobMenu():        # Menu to search job listings or create a new job. sub to actionsMenu()
-    option = int(input("\nPlease make a job related selection:\n1. Search posted jobs\n2. Create a job listing\n3. Delete your job posting\n4. Back\n-> "))
-    while option != 4:
-        if option == 1:
-            print("\nDisplaying all job:")
-            jobs.displayAllJobs()
-            createOrFindJobMenu()
-        elif option == 2:
-            print(jobs.createAJob())
-            createOrFindJobMenu()
-        elif option == 3:
-            jobs.deleteJobPosting()
+    while True:
+        deletedJobNoti(accounts.currentUser)
         option = int(input("\nPlease make a job related selection:\n1. Search posted jobs\n2. Create a job listing\n3. Back\n-> "))
-    
+        if option == 1:
+            while True:
+                preference = int(input("1. View all jobs\n2. View applied jobs\n3. View not applied jobs\n4. View saved jobs\n5. Back\n-> "))
+                if preference == 1:
+                    viewAllJobs(accounts.currentUser)
+                elif preference == 2:
+                    viewAppliedJobs(accounts.currentUser)
+                elif preference == 3:
+                    viewNotAppliedJobs(accounts.currentUser)
+                elif preference == 4:
+                    viewSavedJobs(accounts.currentUser)
+                else: break
+        elif option == 2:
+            while True:
+                preference = int(input("1. View my job postings\n2. Create a job listing\n3. Back\n-> "))
+                if preference == 1:
+                    myJobPostings(accounts.currentUser)
+                elif preference == 2:
+                    jobs.createAJob(accounts.currentUser)
+                else: break
+        elif option == 3:
+            break
+
+def myJobPostings(current_user):    # check curr_users job postings
+    while True:
+        jobCounter = 1
+        jobPostings = jobs.myJobPostings(current_user)
+        print("Job Lists")
+        for row in jobPostings:
+            print(f"{jobCounter}. {row[1]}")
+            jobCounter+= 1
+        print("Options: ")
+        option = int(input("1. View Details\n2. Delete Jobs\n3. Back\n-> "))
+        if option == 1:
+            job = int(input("Please choose the job number you would like to view\n-> "))
+            jobs.displayAJob(jobPostings[job-1][0])
+        elif option == 2:
+            job = int(input("Please choose the job number you would like to delete\n-> "))
+            jobs.deleteAJob(jobPostings[job-1][0])
+        elif option == 3:
+            break
+
+def deletedJobNoti(current_user):       # shows notification that a job that curr_user applied to has been deleted
+    if jobapps.deletedJobNoti(current_user): print("A job that you applied for has been deleted")
+
+def viewJobDetails(current_user, job_ID):    # shows more information on job and allows application to job
+    jobs.displayAJob(job_ID)
+    while True:
+        option = int(input("1. Apply for Job\n2. Save Job for later\n3. Back\n-> "))
+        if option == 1:
+            if jobapps.checkIfApplied(current_user, job_ID):
+                print("You have already applied for this job")
+            elif jobs.selfApplyCheck(current_user, job_ID):
+                print("You cannot apply for a job that you posted")
+            else:
+                jobapps.createApplication(current_user, job_ID)
+                jobapps.changeSavedToApplied(current_user, job_ID)
+                monGrad = int(input("What month did you graduate or expected to graduate?\n-> "))
+                dayGrad = int(input("What day did you graduate or expected to graduate?\n-> "))
+                yearGrad = int(input("What year did you graduate or expected to graduate?\n-> "))
+                monStart = int(input("What month can you start working with us?\n-> "))
+                dayStart = int(input("What day can you start working with us?\n-> "))
+                yearStart = int(input("What year can you start working with us?\n-> "))
+                details = input("Please tell us why you think you would be a good fit for this job?\n-> ")
+                jobapps.updateApplicationInfo(current_user, job_ID, monGrad, dayGrad, yearGrad, monStart, dayStart, yearStart, details)
+            break
+        elif option == 2:
+            if jobapps.checkIfSaved(current_user, job_ID):
+                print("You have already saved this job")
+            elif jobs.selfApplyCheck(current_user, job_ID):
+                print("You cannot save a job that you posted")
+            else:
+                jobapps.saveAJob(current_user, job_ID)
+                print("Job saved")
+            break
+        elif option == 3:
+            break
+
+def viewAllJobs(current_user):    # Displays all jobs, and wheter curr_user applied or saved them
+    while True:
+        jobCounter = 1
+        jobPostings = jobs.displayAllJobs()
+        for row in jobPostings:
+            if jobapps.checkIfApplied(current_user, row[0]):
+                print(f"{jobCounter}. {row[1]} --- Applied")
+            elif jobapps.checkIfSaved(current_user, row[0]):
+                print(f"{jobCounter}. {row[1]} --- Saved")
+            else:
+                print(f"{jobCounter}. {row[1]}")
+            jobCounter+= 1
+        view = int(input("Please choose the job number you would like to view more details about\nPlease choose 0 to go back\n-> "))
+        if view == 0: break
+        viewJobDetails(current_user, jobPostings[view-1][0])
+        
+
+def viewAppliedJobs(current_user):    # shows applied jobs 
+    while True:
+        jobCounter = 1
+        jobPostings = jobs.displayAppliedJobs(current_user)
+        for row in jobPostings:
+            print(f"{jobCounter}. {row[1]}")
+            jobCounter+= 1
+        view = int(input("Please choose the job number you would like to view more details about\nPlease choose 0 to go back\n-> "))
+        if view == 0: break
+        jobs.displayAJob(jobPostings[view-1][0])
+
+def viewNotAppliedJobs(current_user):    # shows jobs not applied for
+    while True:
+        jobCounter = 1
+        jobPostings = jobs.displayAllJobs()
+        for row in jobPostings:
+            if not jobapps.checkIfApplied(current_user, row[0]):
+                print(f"{jobCounter}. {row[1]}")
+            jobCounter+= 1
+        view = int(input("Please choose the job number you would like to view more details about\nPlease choose 0 to go back\n-> "))
+        if view == 0: break
+        viewJobDetails(current_user, jobPostings[view-1][0])
+
+def viewSavedJobs(current_user):    # shows saved jobs
+    while True:
+        jobCounter = 1
+        jobPostings = jobs.displaySavedJobs(current_user)
+        for row in jobPostings:
+            print(f"{jobCounter}. {row[1]}")
+            jobCounter+= 1
+        print("\nOptions: ")
+        option = int(input("1. View job details\n2. Unsave jobs\n3. Back\n-> "))
+        if option == 1:
+            view = int(input("Please choose the job number you would like to view more details about\nPlease choose 0 to go back\n-> "))
+            viewJobDetails(current_user, jobPostings[view-1][0])
+        elif option == 2:
+            unsave = int(input("Please choose the job number you want to unsave\nChoose 0 if you don't want to unsave any job\n-> "))
+            jobapps.unsaveAJob(current_user, jobPostings[unsave-1][0])
+        else:
+            break
+
 def findAFriend():       # Finding a friend on InCollege via first and lastname search
     print("\nFind your friends on InCollege!")
     firstName = input("First Name: ")
@@ -715,9 +880,9 @@ def skillsMenu():        # Menu to display skills to learn. Sub actionsMenu()
         print("\n--Under Construction--")
         selection = int(input("Please select one of those skill:\n1. Python\n2. C++\n3. HTML\n4. JavaScript\n5. CSS\n6. Back\n->"))
 
-def guestControls():
+def guestControls():    # allows alteration of account controls 
     if accounts.currentUser is None:
-        print("Please Sign-In to your account to see the options")
+        print("Please Sign in to your account to see the options")
         return
     _,_,_,_,_,_,email,sms,adfeatures,_ = accounts.searchAccount(accounts.currentUser)
     if email == "On":
@@ -746,7 +911,7 @@ def guestControls():
             adfeatures = "On"
     accounts.updateGuestControls(email, sms, adfeatures)
 
-def updateLanguage():
+def updateLanguage():    # update the language in account
     if accounts.currentUser is None:
         language = accounts.language
         if language == "English":
@@ -775,13 +940,15 @@ def updateLanguage():
     accounts.updateLanguage(language)
 
 
-def main():
+def main():    # Main function, start of program
     global friends
     global accounts
     global jobs
     global profiles
+    global jobapps
     profiles = ProfilesCreation("incollege")
     jobs = JobPosting("incollege")
+    jobapps = JobApplication("incollege")
     accounts = AccountCreation("incollege")
     friends = Friends("incollege")
     openingTestimonial()
