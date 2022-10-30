@@ -8,9 +8,9 @@ class JobPosting:            # class for creating job listings
         self._cur.execute("CREATE TABLE IF NOT EXISTS jobs ('title' TEXT NOT NULL, 'description' TEXT NOT NULL, 'employer' TEXT NOT NULL, 'location' TEXT NOT NULL, 'salary' FLOAT NOT NULL, 'poster' TEXT NOT NULL)")
         
     def checkLimit(self): # Checking whether the number of jobs has reached the limit of 5
-        rows = self._cur.execute("SELECT COUNT(*) FROM jobs")
-        for row in rows:
-            if row[0] >= 5:
+        cursor = self._cur.execute("SELECT COUNT(*) FROM jobs")
+        for row in cursor:
+            if row[0] >= 10:
                 return False
         return True
     
@@ -31,18 +31,61 @@ class JobPosting:            # class for creating job listings
         self.addJob(title, description, employer, location, salary, accounts.currentUser)
         return "\n--Job has been posted--"
 
-    def displayAllJobs(self):
-        rows = self._cur.execute("SELECT * FROM jobs")
+    def applyForJob(jobTitle): # func to applying for a job
+        return
+        
+    def displayAllJobs(self):    # Func displays all jobs listed
+        cursor = self._cur.execute("SELECT * FROM jobs")
         jobCounter = 1
-        for row in rows:
-            print(f"\nJob {jobCounter}:")
+        applySelection = 0
+        for row in cursor:    # printing only titles of jobs
+            print(f"\nJob # {jobCounter}:")
+            print(f"Title: {row[0]}")
+            jobCounter+= 1
+
+        selectedJob = input("\nEnter a job name to view more details: ")    # selecting a job to view more info
+        
+        sql_select_query = """select * from jobs where title = ?"""
+        cursor.execute(sql_select_query, (selectedJob,))
+        records = cursor.fetchall()
+        print(f"\nDisplaying {selectedJob} information: ")
+        for row in records:
+            print(f"  Title: {row[0]}")
+            jobTitle = {row[0]}
+            print(f"  Description: {row[1]}")
+            print(f"  Employer: {row[2]}")
+            print(f"  Location: {row[3]}")
+            print(f"  Salary: ${row[4]:,.2f}")
+        
+        
+        if accounts.currentUser != None: # if user logged in they can apply for jobs
+            applySelection = int(input("\nWould you like to apply for this job? (1. Yes, 2. No): ")) # asking if user wants to apply for selected job.
+
+        if applySelection == 1: # if user wants to apply for job, then apply
+            self.applyForJob(jobTitle)
+            
+    def deleteJobPosting(self): # func to delete specific job that current user has posted
+        cursor = self._cur.execute("SELECT * FROM jobs WHERE poster=:c", {"c": accounts.currentUser}) # Cursor reads only jobs from current user
+        jobCounter = 1
+        currUsersJobs = [] # array storing curr users jobs
+        for row in cursor:    # print curr users jobs
+            print(f"\nJob # {jobCounter}:")
             print(f"Title: {row[0]}")
             print(f"Description: {row[1]}")
             print(f"Employer: {row[2]}")
             print(f"Location: {row[3]}")
             print(f"Salary: ${row[4]:,.2f}")
+            currUsersJobs.append(row[0])     # add job name to list of users jobs
             jobCounter+= 1
-            
+
+        jobSelection = int(input("\nSelect the job number you want to be deleted: "))
+
+        sql_update_query = "DELETE FROM jobs WHERE title = ?"
+        cursor.execute(sql_update_query, (currUsersJobs[jobSelection-1],))
+        print("job deleted successfully")
+
+    
+
     def commit(self):
         self._db.commit()
 
@@ -479,7 +522,7 @@ def networking():
         option = int(input("1. Search for Friends\n2. View Friend Requests\n3. Show my Network\n4. Back\n-> "))
 
 def initialScreen():        # Home screen for InCollege. Leads to all others
-    print("\nPlease choose between the options:\n1. Create new account\n2. Sign in to existing account\n3. Useful Links\n4. InCollege Important Links\n5. Quit")
+    print("\nPlease choose between the options:\n1. Create new account\n2. Sign-In to existing account\n3. Useful Links\n4. InCollege Important Links\n5. Quit")
     option = int(input("-> "))
     while option != 5:
         if option == 1:
@@ -491,28 +534,31 @@ def initialScreen():        # Home screen for InCollege. Leads to all others
             usefulLinks()
         elif option == 4:
             incollegeImportantLinks()
-        print("Please choose between the options:\n1. Create new account\n2. Sign in to existing account\n3. Useful Links\n4. InCollege Important Links\n5. Back")
+        print("Please choose between the options:\n1. Create new account\n2. Sign-In to existing account\n3. Useful Links\n4. InCollege Important Links\n5. Back")
         option = int(input("-> "))
     print("\nNow exiting, have a good day.")
 
 def openingTestimonial():    # prints success story and directs user to advertisement video
     print("Hi College Student!\nIm Rowena, and when I was a college sophmore, InCollege got me a job at Google, now only 4 months later, I'm the CEO!\nWithout InCollege, I could have never done it!\n")
-    option = int(input("1. Check out how YOU will become a FANG CEO with InCollege!\n2. Login or SignUp Screen\n3. Search for friends\n4. Useful Links\n5. InCollege Important Links\n6. Quit\n-> "))
+    option = int(input("1. Check out how YOU will become a FANG CEO with InCollege!\n2. Sign-In or SignUp Screen\n3. Job search/internship \n4. Search for friends\n5. Useful Links\n6. InCollege Important Links\n7. Quit\n-> "))
     while True:
         if option == 1:
             print("\n--video is now playing--\n")
+            initialScreen()
         elif option == 2:
             initialScreen()
         elif option == 3:
-            searchForFriends()
+            jobs.displayAllJobs()
         elif option == 4:
-            usefulLinks()
+            searchForFriends()
         elif option == 5:
-            incollegeImportantLinks()
+            usefulLinks()
         elif option == 6:
+            incollegeImportantLinks()
+        elif option == 7:
             quit("\n--Leaving InCollege--\n")
-        print("Hi College Student!\nIm Rowena, and when I was a college sophmore, InCollege got me a job at Google, now only 4 months later, I'm the CEO!\nWithout InCollege, I could have never done it!\n")
-        option = int(input("1. Check out how YOU will become a FANG CEO with InCollege!\n2. Login or SignUp Screen\n3. Search for friends\n4. Useful Links\n5. InCollege Important Links\n6. Quit\n-> "))
+'''        print("Hi College Student!\nIm Rowena, and when I was a college sophmore, InCollege got me a job at Google, now only 4 months later, I'm the CEO!\nWithout InCollege, I could have never done it!\n")
+        option = int(input("1. Check out how YOU will become a FANG CEO with InCollege!\n2. Sign-In or SignUp Screen\n3. Search for friends\n4. Useful Links\n5. InCollege Important Links\n6. Quit\n-> "))'''
 
 def signIn():            # function to sign in user.
     userName = input("\nPlease type in your Username: ")
@@ -522,6 +568,7 @@ def signIn():            # function to sign in user.
     while not accounts.checkPassword(userName, password):
         password = input(f"\nERROR: Incorrect password\nEnter the correct password for {userName}: ")
     accounts.currentUser = userName
+    print(f"\nWelcome back {accounts.currentUser}!")
     friendRequests()
 
 def actionsMenu():        # Menu after logging in. Sub to initialScreen()
@@ -638,8 +685,8 @@ def createOrViewProfileMenu():
 
 
 def createOrFindJobMenu():        # Menu to search job listings or create a new job. sub to actionsMenu()
-    option = int(input("\nPlease make a job related selection:\n1. Search posted jobs\n2. Create a job listing\n3. Back\n-> "))
-    while option != 3:
+    option = int(input("\nPlease make a job related selection:\n1. Search posted jobs\n2. Create a job listing\n3. Delete your job posting\n4. Back\n-> "))
+    while option != 4:
         if option == 1:
             print("\nDisplaying all job:")
             jobs.displayAllJobs()
@@ -647,6 +694,8 @@ def createOrFindJobMenu():        # Menu to search job listings or create a new 
         elif option == 2:
             print(jobs.createAJob())
             createOrFindJobMenu()
+        elif option == 3:
+            jobs.deleteJobPosting()
         option = int(input("\nPlease make a job related selection:\n1. Search posted jobs\n2. Create a job listing\n3. Back\n-> "))
     
 def findAFriend():       # Finding a friend on InCollege via first and lastname search
@@ -668,7 +717,7 @@ def skillsMenu():        # Menu to display skills to learn. Sub actionsMenu()
 
 def guestControls():
     if accounts.currentUser is None:
-        print("Please Sign in to your account to see the options")
+        print("Please Sign-In to your account to see the options")
         return
     _,_,_,_,_,_,email,sms,adfeatures,_ = accounts.searchAccount(accounts.currentUser)
     if email == "On":
