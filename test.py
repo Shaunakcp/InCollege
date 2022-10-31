@@ -1,4 +1,7 @@
+        
+from turtle import title
 import incollege
+
 
 
 # This test_ case tests whether there's userTest1 in the username database
@@ -174,13 +177,47 @@ def test_jobLimitTest_5():
     jobs = incollege.JobPosting("test")
     jobs.addJob("title5", "description5", "employer5", "location5", "salary5",
                 "testUser5")
-    assert not jobs.checkLimit()
+    assert jobs.checkLimit()
 
 
 def test_jobLimitTest_6():
     jobs = incollege.JobPosting("test")
     jobs.addJob("title6", "description6", "employer6", "location6", "salary6",
                 "testUser6")
+    assert jobs.checkLimit()
+
+# Increased Job limit to 10
+
+def test_jobLimitTest_7():
+    jobs = incollege.JobPosting("test")
+    jobs.addJob("title7", "description7", "employer7", "location7", "salary7",
+                "testUser7")
+    assert jobs.checkLimit()
+
+def test_jobLimitTest_8():
+    jobs = incollege.JobPosting("test")
+    jobs.addJob("title8", "description8", "employer8", "location8", "salary8",
+                "testUser8")
+    assert jobs.checkLimit()
+
+def test_jobLimitTest_9():
+    jobs = incollege.JobPosting("test")
+    jobs.addJob("title9", "description9", "employer9", "location9", "salary9",
+                "testUser9")
+    assert jobs.checkLimit()
+
+#Determine if At limit
+def test_jobLimitTest_10():
+    jobs = incollege.JobPosting("test")
+    jobs.addJob("title10", "description10", "employer10", "location10", "salary10",
+                "testUser10")
+    assert not jobs.checkLimit()
+
+#Determine if over limit
+def test_jobLimitTest_11():
+    jobs = incollege.JobPosting("test")
+    jobs.addJob("title11", "description11", "employer11", "location11", "salary11",
+                "testUser11")
     assert not jobs.checkLimit()
 
 
@@ -430,5 +467,72 @@ def test_ProfileModification():
     profiles.addEdu(accounts.currentUser, "USF from 2020 to 2023")
     rows = profiles._cur.execute("SELECT * FROM profiles WHERE profile_user = ?", (accounts.currentUser,))
     assert rows.fetchall()[0] == (accounts.currentUser, "IT Support", "Information Technology", "University Of South Florida", "I'm a Senior", "I worked at USF for 2 years", "USF from 2020 to 2023")
+
+# Epic 6 10/30/2022 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+#user cannot apply to job made by self
+
+
+def test_check_SelfApplicationUser():
+    global accounts
+    global jobs
+    global jobapps
+    jobs = incollege.JobPosting("test")
+    accounts = incollege.AccountCreation("test")
+    jobapps = incollege.JobApplication("test")
+    accounts.currentUser = "userTest1"
+    assert not jobs.selfApplyCheck('userTest1', 'title1')
+    
+# check if user has applied to job
+
+def test_checkIfapplied():
+    global accounts
+    global jobs
+    global jobapps
+    jobs = incollege.JobPosting("test")
+    accounts = incollege.AccountCreation("test")
+    jobapps = incollege.JobApplication("test")
+    accounts.currentUser = "userTest2"
+    jobapps.createApplication('userTest2','title1')
+    assert not jobapps.checkIfApplied('userTest1', 'title1')
+
+
+# user cannot save job more than once
+def test_check_savedjob():
+    global accounts
+    global jobs
+    global jobapps
+    jobs = incollege.JobPosting("test")
+    accounts = incollege.AccountCreation("test")
+    jobapps = incollege.JobApplication("test")
+    accounts.currentUser = "userTest1"
+    jobapps.saveAJob('userTest1','title1')
+    assert jobapps.checkIfSaved('userTest1', 'title1')
+
+#user can unsave a saved job
+def test_unsavignJob():
+    global accounts
+    global jobs
+    global jobapps
+    jobs = incollege.JobPosting("test")
+    accounts = incollege.AccountCreation("test")
+    jobapps = incollege.JobApplication("test")
+    accounts.currentUser = "userTest1"
+    jobapps.unsaveAJob('userTest1','title1')
+    assert not jobapps.checkIfSaved('userTest1', 'title1')
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
