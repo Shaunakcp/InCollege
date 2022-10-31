@@ -784,12 +784,12 @@ def viewJobDetails(current_user, job_ID):    # shows more information on job and
             else:
                 jobapps.createApplication(current_user, job_ID)
                 jobapps.changeSavedToApplied(current_user, job_ID)
-                monGrad = int(input("What month did you graduate or expected to graduate?\n-> "))
-                dayGrad = int(input("What day did you graduate or expected to graduate?\n-> "))
+                monGrad = int(input("What month did you graduate or expected to graduate? (numerical format ex: 01 - 12)\n-> "))
+                dayGrad = int(input("What day did you graduate or expected to graduate? (numerical format ex: 01 - 31)\n-> "))
                 yearGrad = int(input("What year did you graduate or expected to graduate?\n-> "))
-                monStart = int(input("What month can you start working with us?\n-> "))
-                dayStart = int(input("What day can you start working with us?\n-> "))
-                yearStart = int(input("What year can you start working with us?\n-> "))
+                monStart = int(input("What month can you start working with us? (numerical format ex: 01 - 12)\n-> "))
+                dayStart = int(input("What day can you start working with us? (numerical format ex: 01 - 31)\n-> "))
+                yearStart = int(input("What year can you start working with us? \n-> "))
                 details = input("Please tell us why you think you would be a good fit for this job?\n-> ")
                 jobapps.updateApplicationInfo(current_user, job_ID, monGrad, dayGrad, yearGrad, monStart, dayStart, yearStart, details)
             break
