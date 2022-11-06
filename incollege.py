@@ -1,4 +1,144 @@
 import sqlite3           # database used to store account & job information
+import datetime
+
+class Message:
+    def __init__(self, dbName):
+        self._db = sqlite3.connect(f"./{dbName}.db")
+        self._cur = self._db.cursor()
+        self._cur.execute("CREATE TABLE IF NOT EXISTS messages ('id' INTEGER PRIMARY KEY AUTOINCREMENT, 'message' TEXT, 'sender' TEXT, 'receiver' TEXT, 'datetime' TEXT, 'read' TEXT)")
+        self._db.commit()
+    
+    def addMessage(self, message, sender, receiver):
+        currentDateTime = datetime.datetime.now()
+        self._cur.execute("INSERT INTO messages (message, sender, receiver, datetime, read) VALUES (?, ?, ?, ?, ?)", (message, sender, receiver, currentDateTime, "no"))
+        self.commit()
+
+    def getMessages(self, receiver):
+        rows = self._cur.execute("SELECT * FROM messages WHERE receiver = ?", (receiver,))
+        return rows.fetchall()
+
+    def getUnreadMessages(self, receiver):
+        rows = self._cur.execute("SELECT * FROM messages WHERE receiver = ? AND read = ?", (receiver, "no"))
+        return rows.fetchall()
+
+    def viewMessages(self, sender, receiver):
+        rows = self._cur.execute("SELECT * FROM messages WHERE (sender = ? AND receiver = ?) OR (sender = ? AND receiver = ?)", (sender, receiver, receiver, sender))
+        return rows.fetchall()
+
+    def haveUnreadMessages(self, sender, receiver):
+        rows = self._cur.execute("SELECT * FROM messages WHERE sender = ? AND receiver = ? AND read = ?", (sender, receiver, "no"))
+        return len(rows.fetchall()) > 0
+
+    def haveNewMessages(self, receiver):
+        rows = self._cur.execute("SELECT * FROM messages WHERE receiver = ? AND read = ?", (receiver, "no"))
+        return len(rows.fetchall()) > 0
+
+    def listOfSenders(self, receiver):
+        rows = self._cur.execute("SELECT DISTINCT messages.sender, accounts.firstname, accounts.lastname FROM messages, accounts WHERE messages.sender = accounts.username AND messages.receiver = ?", (receiver,))
+        return rows.fetchall()
+
+    def markAsRead(self, id):
+        self._cur.execute("UPDATE messages SET read = ? WHERE id = ?", ("yes", id))
+        self.commit()
+
+    def deleteMessage(self, id):
+        self._cur.execute("DELETE FROM messages WHERE id = ?", (id,))
+        self.commit()
+
+    def haveCommunication(self, sender, receiver):
+        rows = self._cur.execute("SELECT * FROM messages WHERE sender = ? AND receiver = ?", (sender, receiver))
+        return len(rows.fetchall()) > 0
+
+    def commit(self):
+        self._db.commit()
+
+    def close(self):
+        self._cur.close()
+        self._db.close()
+
+def searchAndMessage():
+    list_of_users = accounts.listOfUsers(accounts.currentUser)
+    if list_of_users == []:
+        print("There is no other user in the system")
+        return
+    i = 0
+    for user in list_of_users:
+        print(f"{i}: {user[1]} {user[2]}")
+        i += 1
+    useridx = int(input("Please enter the user number you would like to message: "))
+    if useridx >= len(list_of_users):
+        print("Invalid user number")
+        return
+    receiver = list_of_users[useridx][0]
+    if not accounts.checkTier(accounts.currentUser):
+        if not friends.checkIfConnected(accounts.currentUser, receiver) and not messages.haveCommunication(accounts.currentUser, receiver):
+            print("You cannot messages users that are not in your network if you are a Standard user")
+            return
+    flag = True
+    while flag:
+        print("Enter the message you would like to send")
+        message = input("-> ")
+        if message == "":
+            print("Message cannot be empty")
+            flag = False if input("Do you want to continue sending a message? (y/n)") == 'n' else True
+        else:
+            flag = False
+    messages.addMessage(message, accounts.currentUser, receiver)
+    print("Message sent")
+
+def viewInbox():
+    list_of_senders = messages.listOfSenders(accounts.currentUser)
+    if list_of_senders == []:
+        print("You don't have any message")
+        return
+    i = 0
+    for sender in list_of_senders:
+        if messages.haveUnreadMessages(sender[0], accounts.currentUser):
+            print(f"{i}: {sender[1]} {sender[2]} has sent you a message")
+        else:
+            print(f"{i}: {sender[1]} {sender[2]}")
+        i += 1
+    senderidx = int(input("Please enter the sender number you would like to view: "))
+    if senderidx >= len(list_of_senders):
+        print("Invalid sender number")
+        return
+    sender = list_of_senders[senderidx][0]
+    rows = messages.viewMessages(sender, accounts.currentUser)
+    for row in rows:
+        account = accounts.searchAccount(row[2])
+        print(f"{account[2]} {account[3]}: {row[1]}")
+        if row[3] == accounts.currentUser:
+            messages.markAsRead(row[0])
+    delete = input("Do you want to delete this conversation? (y/n)")
+    if delete == 'y':
+        for row in rows:
+            messages.deleteMessage(row[0])
+    while True:
+        print("Enter the message you would like to send")
+        message = input("-> ")
+        if message == "":
+            print("Message cannot be empty")
+            if input("Do you want to continue sending a message? (y/n)") == 'n':
+                return
+        else:
+            break
+    messages.addMessage(message, accounts.currentUser, sender)
+    print("Message sent")
+
+def messageMenu():
+    while True:
+        print("1. Search and message")
+        print("2. View inbox")
+        print("3. Back")
+        choice = input("-> ")
+        if choice == "1":
+            searchAndMessage()
+        elif choice == "2":
+            viewInbox()
+        elif choice == "3":
+            break
+        else:
+            print("Invalid choice")
 
 class JobApplication:
     def __init__(self, dbName): # create 2 tables for job applications and application information
@@ -6,6 +146,7 @@ class JobApplication:
         self._cur = self._db.cursor()
         self._cur.execute("CREATE TABLE IF NOT EXISTS jobapps ('appID' INTEGER PRIMARY KEY AUTOINCREMENT, 'applicantID' TEXT NOT NULL, 'jobID' INTEGER NOT NULL, 'status' TEXT NOT NULL)")
         self._cur.execute("CREATE TABLE IF NOT EXISTS appinfos ('appID' INTEGER NOT NULL, 'monGrad' INTEGER, 'dayGrad' INTEGER, 'yearGrad' INTEGER, 'monStart' INTEGER, 'dayStart' INTEGER, 'yearStart' INTEGER, 'details' TEXT NOT NULL, FOREIGN KEY (appID) REFERENCES jobapps (appID) ON DELETE CASCADE)")
+        self._db.commit()
 
     def checkIfApplied(self, applicant_ID, job_ID): # check whether the user already applied for the job
         rows = self._cur.execute("SELECT COUNT(*) FROM jobapps WHERE applicantID = ? AND jobID = ? AND status = ?", (applicant_ID, job_ID, 'applied'))
@@ -68,6 +209,7 @@ class JobPosting:            # class for creating job listings
         self._cur = self._db.cursor()
         # Creating a table in SQL file to store account info
         self._cur.execute("CREATE TABLE IF NOT EXISTS jobs ('jobID' INTEGER PRIMARY KEY AUTOINCREMENT, 'title' TEXT NOT NULL, 'description' TEXT NOT NULL, 'employer' TEXT NOT NULL, 'location' TEXT NOT NULL, 'salary' FLOAT NOT NULL, 'poster' TEXT NOT NULL)")
+        self._db.commit()
         
     def checkLimit(self): # Checking whether the number of jobs has reached the limit of 5
         rows = self._cur.execute("SELECT COUNT(*) FROM jobs")
@@ -145,9 +287,15 @@ class AccountCreation:        # class for creating accounts
         self._db = sqlite3.connect(f"./{dbName}.db")
         self._cur = self._db.cursor()
         # Creating a table in SQL file to store account info
-        self._cur.execute("CREATE TABLE IF NOT EXISTS accounts ('username' TEXT NOT NULL UNIQUE, 'password' TEXT NOT NULL, 'firstname' TEXT NOT NULL, 'lastname' TEXT NOT NULL, 'university' TEXT NOT NULL, 'major' TEXT NOT NULL, 'emailnoti' TEXT NOT NULL, 'sms' TEXT NOT NULL, 'adfeatures' TEXT NOT NULL, 'languagepreference' TEXT NOT NULL)")
+        self._cur.execute("CREATE TABLE IF NOT EXISTS accounts ('username' TEXT NOT NULL PRIMARY KEY, 'password' TEXT NOT NULL, 'firstname' TEXT NOT NULL, 'lastname' TEXT NOT NULL, 'university' TEXT NOT NULL, 'major' TEXT NOT NULL, 'emailnoti' TEXT NOT NULL, 'sms' TEXT NOT NULL, 'adfeatures' TEXT NOT NULL, 'languagepreference' TEXT NOT NULL)")
+        self._cur.execute("CREATE TABLE IF NOT EXISTS membership ('username' TEXT NOT NULL, 'tier' TEXT NOT NULL, FOREIGN KEY (username) REFERENCES accounts(username) ON DELETE CASCADE) ")
         self.currentUser = None
         self.language = "English"
+        self._db.commit()
+
+    def listOfUsers(self, username):        # func returns list of all usernames
+        rows = self._cur.execute("SELECT username, firstname, lastname FROM accounts WHERE username != ?", (username,))
+        return rows.fetchall()
 
     # CRUD 
     def commit(self):
@@ -161,6 +309,18 @@ class AccountCreation:        # class for creating accounts
         query = "INSERT INTO accounts ('username', 'password', 'firstname', 'lastname', 'university', 'major', 'emailnoti', 'sms', 'adfeatures', 'languagepreference') VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
         self._cur.execute(query, (userName, passWord, firstName, lastName, university, major, "On", "On", "On", "English"))
         self.commit()
+
+    def addTier(self, userName, tier):
+        self._cur.execute("INSERT INTO membership ('username', 'tier') VALUES (?, ?)", (userName, tier))
+        self.commit()
+
+    def checkTier(self, userName): #return True if user is a Plus, False if user is a Standard
+        rows = self._cur.execute("SELECT tier FROM membership WHERE username = ?", (userName,))
+        for row in rows:
+            if row[0] == "plus":
+                return True
+            else:
+                return False
 
     def displayAccount(self):            # print all account and password
         rows = self._cur.execute("SELECT * FROM accounts")
@@ -207,6 +367,13 @@ class AccountCreation:        # class for creating accounts
                 return False
         return True
 
+    def changeTier(self, userName):
+        if self.checkTier(userName):
+            self._cur.execute("UPDATE membership SET 'tier' = ? WHERE username = ?", ('standard', userName))
+        else:
+            self._cur.execute("UPDATE membership SET 'tier' = ? WHERE username = ?", ('plus', userName))
+        self.commit()
+
     def createNewAccount(self):        # Creating new account with username and password
         if not self.checkLimit():
             return "ERROR: All permitted accounts have been created, please come back later"
@@ -232,6 +399,12 @@ class AccountCreation:        # class for creating accounts
         lastName = input("Please enter your last name: ")
         university = input("Please enter institution that you're attending: ")
         major = input("Please enter you major: ")
+        print("Plus users have access to more features, including:\nBeing able to send messages to everyone in the system")
+        print("Your subscription is $10/month and will be automatically renewed at the end of each month")
+        tier = input("Do you want to be a Standard user or a Plus user? (standard/plus): ")
+        while tier != "standard" and tier != "plus":
+            tier = input("Please enter either 'standard' or 'plus': ")
+        self.addTier(userName, tier)
         self.addAccount(userName, passWord, firstName, lastName, university, major)    # Calling addAccount func with 4 arguments
         return f"Account {userName} successfully created"
     
@@ -288,7 +461,8 @@ class ProfilesCreation:
         self._db = sqlite3.connect(f"./{dbName}.db")
         self._cur = self._db.cursor()
         #creates a table in sql for profiles info
-        self._cur.execute("CREATE TABLE IF NOT EXISTS profiles ('profile_user' TEXT NOT NULL,'title' TEXT NOT NULL, 'major' TEXT NOT NULL, 'university' TEXT NOT NULL, 'info' TEXT NOT NULL, 'experience' TEXT NOT NULL, 'education' TEXT NOT NULL)") 
+        self._cur.execute("CREATE TABLE IF NOT EXISTS profiles ('profile_user' TEXT NOT NULL,'title' TEXT NOT NULL, 'major' TEXT NOT NULL, 'university' TEXT NOT NULL, 'info' TEXT NOT NULL, 'experience' TEXT NOT NULL, 'education' TEXT NOT NULL)")
+        self._db.commit()
     
     def addProfileUser(self, profile_user):    # Add a new user profile. default to null
         query = "INSERT INTO profiles ('profile_user', 'title','major','university','info','experience','education') VALUES (?,?,?,?,?,?,?)"
@@ -462,6 +636,8 @@ def friendRequests():        # print list of friend requests. Allow user to acce
         accept = input("-> ")
         if accept == "y":
             friends.acceptFriend(accounts.currentUser, friend[0])
+        elif accept == "n":
+            friends.deleteAFriend(accounts.currentUser, friend[0])
         # TODO: implement removal from friend reqs. if 'n'??
 
 def friendRequestsList():    #  print list of friend requests. Allow user to accept or decline requests
@@ -550,7 +726,8 @@ def searchForFriends():    # allows curr user to search for a friend by name, ma
             else:
                 print(f"{i}: {friend[2]} {friend[3]} -- Send a request?")
             i += 1
-        friendidx = int(input("Please enter the friend number you would like to connect: "))
+        friendidx = int(input("Please enter the friend number you would like to connect (-1 to skip): "))
+        if friendidx == -1: break
         if not (friends.checkIfConnected(accounts.currentUser, list_of_friends[friendidx][0]) or friends.checkIfPending(accounts.currentUser, list_of_friends[friendidx][0])):
             friendsUsername = list_of_friends[friendidx][0]
             friends.addFriend(accounts.currentUser, friendsUsername)
@@ -614,28 +791,35 @@ def signIn():            # function to sign in user.
         password = input(f"\nERROR: Incorrect password\nEnter the correct password for {userName}: ")
     accounts.currentUser = userName
     friendRequests()
+    if messages.haveNewMessages(accounts.currentUser):
+        print("You have unread messages!")
+        option = input("View your messages (y/n): ")
+        if option == 'y':
+            messageMenu()
 
 def actionsMenu():        # Menu after logging in. Sub to initialScreen()
     signIn()
-    selection = int(input("\nPlease select a menu option:\n1. Find or Post a job\n2. Find a friend\n3. Learn a new skill\n4. Useful Links\n5. InCollege Important Links\n6. Profile Management\n7. Sign Out\n-> "))
+    selection = int(input("\nPlease select a menu option:\n1. Find or Post a job\n2. Find a friend\n3. Message Menu\n4. Learn a new skill\n5. Useful Links\n6. InCollege Important Links\n7. Profile Management\n8. Sign Out\n-> "))
     while True:
         if selection == 1:
             createOrFindJobMenu()
         elif selection == 2:
             networking()
         elif selection == 3:
-            skillsMenu()
+            messageMenu()
         elif selection == 4:
-            usefulLinks()
+            skillsMenu()
         elif selection == 5:
-            incollegeImportantLinks()
+            usefulLinks()
         elif selection == 6:
-            createOrViewProfileMenu()
+            incollegeImportantLinks()
         elif selection == 7:
+            createOrViewProfileMenu()
+        elif selection == 8:
             print("\nSigning you out...\n")
             accounts.currentUser = None
             return
-        selection = int(input("\nPlease select a menu option:\n1. Find or Post a job\n2. Find a friend\n3. Learn a new skill\n4. Useful Links\n5. InCollege Important Links\n6. Profile Management\n7. Sign Out\n-> "))
+        selection = int(input("\nPlease select a menu option:\n1. Find or Post a job\n2. Find a friend\n3. Message Menu\n4. Learn a new skill\n5. Useful Links\n6. InCollege Important Links\n7. Profile Management\n8. Sign Out\n-> "))
         
 def usefulLinks():    # Menu for incollege
     print("\nPlease choose between the options:\n1. General\n2. Browse InCollege\n3. Business Solutions\n4. Directories\n5. Back")
@@ -946,6 +1130,8 @@ def main():    # Main function, start of program
     global jobs
     global profiles
     global jobapps
+    global messages
+    messages = Message("incollege")
     profiles = ProfilesCreation("incollege")
     jobs = JobPosting("incollege")
     jobapps = JobApplication("incollege")
