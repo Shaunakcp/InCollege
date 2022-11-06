@@ -56,89 +56,6 @@ class Message:
         self._cur.close()
         self._db.close()
 
-def searchAndMessage():
-    list_of_users = accounts.listOfUsers(accounts.currentUser)
-    if list_of_users == []:
-        print("There is no other user in the system")
-        return
-    i = 0
-    for user in list_of_users:
-        print(f"{i}: {user[1]} {user[2]}")
-        i += 1
-    useridx = int(input("Please enter the user number you would like to message: "))
-    if useridx >= len(list_of_users):
-        print("Invalid user number")
-        return
-    receiver = list_of_users[useridx][0]
-    if not accounts.checkTier(accounts.currentUser):
-        if not friends.checkIfConnected(accounts.currentUser, receiver) and not messages.haveCommunication(accounts.currentUser, receiver):
-            print("You cannot messages users that are not in your network if you are a Standard user")
-            return
-    flag = True
-    while flag:
-        print("Enter the message you would like to send")
-        message = input("-> ")
-        if message == "":
-            print("Message cannot be empty")
-            flag = False if input("Do you want to continue sending a message? (y/n)") == 'n' else True
-        else:
-            flag = False
-    messages.addMessage(message, accounts.currentUser, receiver)
-    print("Message sent")
-
-def viewInbox():
-    list_of_senders = messages.listOfSenders(accounts.currentUser)
-    if list_of_senders == []:
-        print("You don't have any message")
-        return
-    i = 0
-    for sender in list_of_senders:
-        if messages.haveUnreadMessages(sender[0], accounts.currentUser):
-            print(f"{i}: {sender[1]} {sender[2]} has sent you a message")
-        else:
-            print(f"{i}: {sender[1]} {sender[2]}")
-        i += 1
-    senderidx = int(input("Please enter the sender number you would like to view: "))
-    if senderidx >= len(list_of_senders):
-        print("Invalid sender number")
-        return
-    sender = list_of_senders[senderidx][0]
-    rows = messages.viewMessages(sender, accounts.currentUser)
-    for row in rows:
-        account = accounts.searchAccount(row[2])
-        print(f"{account[2]} {account[3]}: {row[1]}")
-        if row[3] == accounts.currentUser:
-            messages.markAsRead(row[0])
-    delete = input("Do you want to delete this conversation? (y/n)")
-    if delete == 'y':
-        for row in rows:
-            messages.deleteMessage(row[0])
-    while True:
-        print("Enter the message you would like to send")
-        message = input("-> ")
-        if message == "":
-            print("Message cannot be empty")
-            if input("Do you want to continue sending a message? (y/n)") == 'n':
-                return
-        else:
-            break
-    messages.addMessage(message, accounts.currentUser, sender)
-    print("Message sent")
-
-def messageMenu():
-    while True:
-        print("1. Search and message")
-        print("2. View inbox")
-        print("3. Back")
-        choice = input("-> ")
-        if choice == "1":
-            searchAndMessage()
-        elif choice == "2":
-            viewInbox()
-        elif choice == "3":
-            break
-        else:
-            print("Invalid choice")
 
 class JobApplication:
     def __init__(self, dbName): # create 2 tables for job applications and application information
@@ -1122,6 +1039,89 @@ def updateLanguage():    # update the language in account
             print("Your language is set English")
             language = "English"
     accounts.updateLanguage(language)
+def searchAndMessage():
+    list_of_users = accounts.listOfUsers(accounts.currentUser)
+    if list_of_users == []:
+        print("There is no other user in the system")
+        return
+    i = 0
+    for user in list_of_users:
+        print(f"{i}: {user[1]} {user[2]}")
+        i += 1
+    useridx = int(input("Please enter the user number you would like to message: "))
+    if useridx >= len(list_of_users):
+        print("Invalid user number")
+        return
+    receiver = list_of_users[useridx][0]
+    if not accounts.checkTier(accounts.currentUser):
+        if not friends.checkIfConnected(accounts.currentUser, receiver) and not messages.haveCommunication(accounts.currentUser, receiver):
+            print("You cannot messages users that are not in your network if you are a Standard user")
+            return
+    flag = True
+    while flag:
+        print("Enter the message you would like to send")
+        message = input("-> ")
+        if message == "":
+            print("Message cannot be empty")
+            flag = False if input("Do you want to continue sending a message? (y/n)") == 'n' else True
+        else:
+            flag = False
+    messages.addMessage(message, accounts.currentUser, receiver)
+    print("Message sent")
+
+def viewInbox():
+    list_of_senders = messages.listOfSenders(accounts.currentUser)
+    if list_of_senders == []:
+        print("You don't have any message")
+        return
+    i = 0
+    for sender in list_of_senders:
+        if messages.haveUnreadMessages(sender[0], accounts.currentUser):
+            print(f"{i}: {sender[1]} {sender[2]} has sent you a message")
+        else:
+            print(f"{i}: {sender[1]} {sender[2]}")
+        i += 1
+    senderidx = int(input("Please enter the sender number you would like to view: "))
+    if senderidx >= len(list_of_senders):
+        print("Invalid sender number")
+        return
+    sender = list_of_senders[senderidx][0]
+    rows = messages.viewMessages(sender, accounts.currentUser)
+    for row in rows:
+        account = accounts.searchAccount(row[2])
+        print(f"{account[2]} {account[3]}: {row[1]}")
+        if row[3] == accounts.currentUser:
+            messages.markAsRead(row[0])
+    delete = input("Do you want to delete this conversation? (y/n)")
+    if delete == 'y':
+        for row in rows:
+            messages.deleteMessage(row[0])
+    while True:
+        print("Enter the message you would like to send")
+        message = input("-> ")
+        if message == "":
+            print("Message cannot be empty")
+            if input("Do you want to continue sending a message? (y/n)") == 'n':
+                return
+        else:
+            break
+    messages.addMessage(message, accounts.currentUser, sender)
+    print("Message sent")
+
+def messageMenu():
+    while True:
+        print("1. Search and message")
+        print("2. View inbox")
+        print("3. Back")
+        choice = input("-> ")
+        if choice == "1":
+            searchAndMessage()
+        elif choice == "2":
+            viewInbox()
+        elif choice == "3":
+            break
+        else:
+            print("Invalid choice")
 
 
 def main():    # Main function, start of program
