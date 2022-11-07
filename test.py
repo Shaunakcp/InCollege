@@ -482,8 +482,6 @@ def test_check_SelfApplicationUser():
     jobapps = incollege.JobApplication("test")
     accounts.currentUser = "userTest1"
     assert not jobs.selfApplyCheck('userTest1', 'title1')
-    
-# check if user has applied to job
 
 def test_checkIfapplied():
     global accounts
@@ -509,7 +507,6 @@ def test_check_savedjob():
     jobapps.saveAJob('userTest1','title1')
     assert jobapps.checkIfSaved('userTest1', 'title1')
 
-#user can unsave a saved job
 def test_unsavignJob():
     global accounts
     global jobs
@@ -522,17 +519,66 @@ def test_unsavignJob():
     assert not jobapps.checkIfSaved('userTest1', 'title1')
 
 
+# Epic 7 11/06/2022 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+# checks if A users tier should be standard
+def test_checkStandard_Tier():
+    global accounts
+    global membership
+    membership = incollege.AccountCreation("test")
+    accounts = incollege.AccountCreation("test")
+    assert not membership.checkTier('userTest1')
+# checks if A users changes tier from standard and becomes plus
+def test_Plus_Tier():
+    global accounts
+    global membership
+    membership = incollege.AccountCreation("test")
+    accounts = incollege.AccountCreation("test")
+    membership.changeTier('userTest1')
+    assert membership.checkTier
 
+# checks if A users message to a friend is working
+def test_newMessage():
+    global accounts
+    global membership
+    global messages
+    membership = incollege.AccountCreation("test")
+    accounts = incollege.AccountCreation("test")
+    messages = incollege.Message("test")
+    messages.addMessage('Hello friend!','userTest1','userTest10')
+    assert messages.haveNewMessages('userTest10') == 1
 
+# checks if A users message is unread by default
+def test_unreadMessages():
+    global accounts
+    global membership
+    global messages
+    membership = incollege.AccountCreation("test")
+    accounts = incollege.AccountCreation("test")
+    messages = incollege.Message("test")
+    assert messages.haveUnreadMessages('userTest1','userTest10') == 1
 
+# checks if A users message is highlighted as read when read by recipent.
+def test_readMessages():
+    global accounts
+    global membership
+    global messages
+    membership = incollege.AccountCreation("test")
+    accounts = incollege.AccountCreation("test")
+    messages = incollege.Message("test")
+    messages.markAsRead(1)
+    assert not messages.haveUnreadMessages('userTest1','userTest10') == 1
 
-
-
-
-
-
-
+# checks if A users message is deleted when deleteing 
+def test_deleteMessages():
+    global accounts
+    global membership
+    global messages
+    membership = incollege.AccountCreation("test")
+    accounts = incollege.AccountCreation("test")
+    messages = incollege.Message("test")
+    messages.deleteMessage(1)
+    assert not messages.haveNewMessages('userTest10') == 1
 
 
 
