@@ -1,6 +1,9 @@
 import sqlite3           # database used to store account & job information
 import datetime
 
+class Notification:
+    pass
+    
 class Message:
     def __init__(self, dbName):
         self._db = sqlite3.connect(f"./{dbName}.db")
@@ -61,7 +64,7 @@ class JobApplication:
     def __init__(self, dbName): # create 2 tables for job applications and application information
         self._db = sqlite3.connect(f"./{dbName}.db")
         self._cur = self._db.cursor()
-        self._cur.execute("CREATE TABLE IF NOT EXISTS jobapps ('appID' INTEGER PRIMARY KEY AUTOINCREMENT, 'applicantID' TEXT NOT NULL, 'jobID' INTEGER NOT NULL, 'status' TEXT NOT NULL)")
+        self._cur.execute("CREATE TABLE IF NOT EXISTS jobapps ('appID' INTEGER PRIMARY KEY AUTOINCREMENT, 'applicantID' TEXT NOT NULL, 'jobID' INTEGER NOT NULL, 'title' TEXT NOT NULL, 'status' TEXT NOT NULL, 'timeapp' TEXT NOT NULL)")
         self._cur.execute("CREATE TABLE IF NOT EXISTS appinfos ('appID' INTEGER NOT NULL, 'monGrad' INTEGER, 'dayGrad' INTEGER, 'yearGrad' INTEGER, 'monStart' INTEGER, 'dayStart' INTEGER, 'yearStart' INTEGER, 'details' TEXT NOT NULL, FOREIGN KEY (appID) REFERENCES jobapps (appID) ON DELETE CASCADE)")
         self._db.commit()
 
@@ -80,15 +83,21 @@ class JobApplication:
         return False
 
     def createApplication(self, applicant_ID, job_ID): # create an application with status "applied" in jobapps table
-        self._cur.execute("INSERT INTO jobapps ('appID', 'applicantID', 'jobID', 'status') VALUES (NULL, ?, ?, ?)", (applicant_ID, job_ID, 'applied'))
+        rows = self._cur.execute("SELECT title FROM jobs WHERE jobID = ?", (job_ID,))
+        for row in rows:
+            title = row[0]
+        self._cur.execute("INSERT INTO jobapps ('appID', 'applicantID', 'jobID', 'title', 'status', 'timeapp') VALUES (NULL, ?, ?, ?, ?, ?)", (applicant_ID, job_ID, title, 'applied', datetime.datetime.now().strftime("%Y-%m-%d")))
         self.commit()
 
     def saveAJob(self, applicant_ID, job_ID): # create an application with status "saved" in jobapps table
-        self._cur.execute("INSERT INTO jobapps ('appID', 'applicantID', 'jobID', 'status') VALUES (NULL, ?, ?, ?)", (applicant_ID, job_ID, 'saved'))
+        rows = self._cur.execute("SELECT title FROM jobs WHERE jobID = ?", (job_ID,))
+        for row in rows:
+            title = row[0]
+        self._cur.execute("INSERT INTO jobapps ('appID', 'applicantID', 'jobID', 'title', 'status', 'timeapp') VALUES (NULL, ?, ?, ?, ?, ?)", (applicant_ID, job_ID, title, 'saved', datetime.datetime.now().strftime("%Y-%m-%d")))
         self.commit()
 
     def changeSavedToApplied(self, applicant_ID, job_ID): # change status from saved to applied
-        self._cur.execute("UPDATE jobapps SET 'status' = ? WHERE applicantID = ? AND jobID = ?", ("applied", applicant_ID, job_ID))
+        self._cur.execute("UPDATE jobapps SET 'status' = ?, 'timeapp' = ? WHERE applicantID = ? AND jobID = ?", ("applied", datetime.datetime.now().strftime("%Y-%m-%d"), applicant_ID, job_ID))
         self.commit()
     
     def unsaveAJob(self, applicant_ID, job_ID): # delete the application that is marked save from jobapps table
@@ -102,16 +111,27 @@ class JobApplication:
         self.commit()
 
     def deletedJobNoti(self, applicant_ID): # check if there's any jobs being deleted by the employer and then refresh the jobapps table and appinfo table by deleting those expired records
-        rows = self._cur.execute("SELECT COUNT(*) FROM jobapps WHERE applicantID = ? AND status = ?", (applicant_ID, 'deleted'))
-        flag = False
+        rows = self._cur.execute("SELECT title FROM jobapps WHERE applicantID = ? AND status = ?", (applicant_ID, 'deleted'))
+        list = []
         for row in rows:
-            if row[0] != 0:
-                flag = True
-                break
+            list.append(row[0])
         self._cur.execute("DELETE FROM jobapps WHERE applicantID = ? AND status = ?", (applicant_ID, 'deleted'))
         self.commit()
-        return flag
-    
+        return list
+
+    def haveNotApplied(self, applicant_ID):
+        rows = self._cur.execute("SELECT timeapp FROM jobapps WHERE applicantID = ? AND status = ? ORDER BY appID DESC LIMIT 1", (applicant_ID, 'applied'))
+        for row in rows:
+            date = row[0].split('-')
+            if datetime.datetime.now() - datetime.datetime(int(date[0]), int(date[1]), int(date[2])) < datetime.timedelta(7):
+                return False
+        return True
+
+    def countJobApps(self, applicant_ID):
+        rows = self._cur.execute("SELECT COUNT(*) FROM jobapps WHERE applicantID = ? AND status = ?", (applicant_ID, 'applied'))
+        for row in rows:
+            return row[0]
+
     def commit(self):
         self._db.commit()
 
@@ -125,7 +145,7 @@ class JobPosting:            # class for creating job listings
         self._db = sqlite3.connect(f"./{dbName}.db")
         self._cur = self._db.cursor()
         # Creating a table in SQL file to store account info
-        self._cur.execute("CREATE TABLE IF NOT EXISTS jobs ('jobID' INTEGER PRIMARY KEY AUTOINCREMENT, 'title' TEXT NOT NULL, 'description' TEXT NOT NULL, 'employer' TEXT NOT NULL, 'location' TEXT NOT NULL, 'salary' FLOAT NOT NULL, 'poster' TEXT NOT NULL)")
+        self._cur.execute("CREATE TABLE IF NOT EXISTS jobs ('jobID' INTEGER PRIMARY KEY AUTOINCREMENT, 'title' TEXT NOT NULL, 'description' TEXT NOT NULL, 'employer' TEXT NOT NULL, 'location' TEXT NOT NULL, 'salary' FLOAT NOT NULL, 'poster' TEXT NOT NULL, 'timepost' TEXT NOT NULL)")
         self._db.commit()
         
     def checkLimit(self): # Checking whether the number of jobs has reached the limit of 5
@@ -136,8 +156,8 @@ class JobPosting:            # class for creating job listings
         return True
     
     def addJob(self, title, description, employer, location, salary, poster):        # Add job to SQL file
-        query = "INSERT INTO jobs ('jobID', 'title', 'description', 'employer', 'location', 'salary', 'poster') VALUES (NULL, ?, ?, ?, ?, ?, ?)"
-        self._cur.execute(query, (title, description, employer, location, salary, poster))
+        query = "INSERT INTO jobs ('jobID', 'title', 'description', 'employer', 'location', 'salary', 'poster', 'timepost') VALUES (NULL, ?, ?, ?, ?, ?, ?, ?)"
+        self._cur.execute(query, (title, description, employer, location, salary, poster, datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")))
         self.commit()
 
     def createAJob(self, current_user):        # Function to create job posting
@@ -190,6 +210,10 @@ class JobPosting:            # class for creating job listings
         self.commit()
         self._cur.execute("UPDATE jobapps SET 'status' = ? WHERE jobID = ?", ('deleted', job_ID)) # updates job status in jobapps table to 'deleted'
         self.commit()
+
+    def newJobPostings(self, current_user):
+        rows = self._cur.execute("SELECT title, timepost FROM jobs WHERE poster != ?", (current_user,))
+        return rows.fetchall()
             
     def commit(self):
         self._db.commit()
@@ -198,13 +222,38 @@ class JobPosting:            # class for creating job listings
         self._cur.close()
         self._db.close()
 
+class SignInHistory:
+    def __init__(self, dbname):
+        self._db = sqlite3.connect(f"./{dbname}.db")
+        self._cur = self._db.cursor()
+        self._cur.execute("CREATE TABLE IF NOT EXISTS signinhistory ('username' TEXT NOT NULL, 'timesign' TEXT NOT NULL)")
+        self._db.commit()
+    
+    def addSignIn(self, username):
+        self._cur.execute("INSERT INTO signinhistory ('username', 'timesign') VALUES (?, ?)", (username, datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")))
+        self.commit()
+
+    def lastSignIn(self, username):
+        rows = self._cur.execute("SELECT timesign FROM signinhistory WHERE username = ? ORDER BY timesign DESC LIMIT 1", (username,))
+        row = rows.fetchall()
+        if row == []:
+            return False
+        date = row[0][0].split("-")
+        return datetime.datetime(int(date[0]), int(date[1]), int(date[2]), int(date[3]), int(date[4]), int(date[5]))
+
+    def commit(self):
+        self._db.commit()
+
+    def close(self):
+        self._cur.close()
+        self._db.close()
 
 class AccountCreation:        # class for creating accounts
     def __init__(self, dbName):
         self._db = sqlite3.connect(f"./{dbName}.db")
         self._cur = self._db.cursor()
         # Creating a table in SQL file to store account info
-        self._cur.execute("CREATE TABLE IF NOT EXISTS accounts ('username' TEXT NOT NULL PRIMARY KEY, 'password' TEXT NOT NULL, 'firstname' TEXT NOT NULL, 'lastname' TEXT NOT NULL, 'university' TEXT NOT NULL, 'major' TEXT NOT NULL, 'emailnoti' TEXT NOT NULL, 'sms' TEXT NOT NULL, 'adfeatures' TEXT NOT NULL, 'languagepreference' TEXT NOT NULL)")
+        self._cur.execute("CREATE TABLE IF NOT EXISTS accounts ('username' TEXT NOT NULL PRIMARY KEY, 'password' TEXT NOT NULL, 'firstname' TEXT NOT NULL, 'lastname' TEXT NOT NULL, 'university' TEXT NOT NULL, 'major' TEXT NOT NULL, 'emailnoti' TEXT NOT NULL, 'sms' TEXT NOT NULL, 'adfeatures' TEXT NOT NULL, 'languagepreference' TEXT NOT NULL, 'timecreated' TEXT NOT NULL)")
         self._cur.execute("CREATE TABLE IF NOT EXISTS membership ('username' TEXT NOT NULL, 'tier' TEXT NOT NULL, FOREIGN KEY (username) REFERENCES accounts(username) ON DELETE CASCADE) ")
         self.currentUser = None
         self.language = "English"
@@ -223,8 +272,8 @@ class AccountCreation:        # class for creating accounts
         self._db.close()
 
     def addAccount(self, userName, passWord, firstName, lastName, university, major): # Create new record in the Database after the input is verified
-        query = "INSERT INTO accounts ('username', 'password', 'firstname', 'lastname', 'university', 'major', 'emailnoti', 'sms', 'adfeatures', 'languagepreference') VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
-        self._cur.execute(query, (userName, passWord, firstName, lastName, university, major, "On", "On", "On", "English"))
+        query = "INSERT INTO accounts ('username', 'password', 'firstname', 'lastname', 'university', 'major', 'emailnoti', 'sms', 'adfeatures', 'languagepreference', 'timecreated') VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+        self._cur.execute(query, (userName, passWord, firstName, lastName, university, major, "On", "On", "On", "English", datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")))
         self.commit()
 
     def addTier(self, userName, tier):
@@ -367,6 +416,10 @@ class AccountCreation:        # class for creating accounts
     def updateGuestControls(self, email, sms, adfeatures):        # updates guest controls for curr user
         self._cur.execute("UPDATE accounts SET emailnoti = ?, sms = ?, adfeatures = ? WHERE username = ?", (email, sms, adfeatures, self.currentUser))
         self.commit()
+
+    def newUsersCreated(self, current_user):        # returns new users created
+        rows = self._cur.execute("SELECT firstname, lastname, timecreated FROM accounts WHERE username != ?", (current_user,))
+        return rows.fetchall()
 
     def updateLanguage(self, lang):        # update lang pref of curr_user
         self.language = lang
@@ -709,14 +762,41 @@ def signIn():            # function to sign in user.
     accounts.currentUser = userName
     friendRequests()
     if messages.haveNewMessages(accounts.currentUser):
-        print("You have unread messages!")
+        print("You have messages waiting for you!")
         option = input("View your messages (y/n): ")
         if option == 'y':
             messageMenu()
+    if jobapps.haveNotApplied(accounts.currentUser):
+        print("You haven't applied to any jobs in 7 days!")
+        print("Remember - you're going to want to have a job when you graduate. Make sure that you start to apply for jobs today!")
+    if profiles.checkExistingUsername(accounts.currentUser):
+        print("You haven't created a profile yet! Please create one now.")
+    newJobPostings()
+    newUsersJoining()
+    deletedJobNoti(accounts.currentUser)
+    signInHistory.addSignIn(accounts.currentUser)
+
+def newJobPostings():
+    newJobs = jobs.newJobPostings(accounts.currentUser)
+    for newJob in newJobs:
+        date = newJob[1].split('-')
+        postdate = datetime.datetime(int(date[0]), int(date[1]), int(date[2]), int(date[3]), int(date[4]), int(date[5]))
+        lastSignIn = signInHistory.lastSignIn(accounts.currentUser)
+        if datetime.datetime.now() > postdate and (not lastSignIn or postdate > lastSignIn):
+            print(f"A new job {newJob[0]} has been posted!")
+
+def newUsersJoining():
+    newUsers = accounts.newUsersCreated(accounts.currentUser)
+    for newUser in newUsers:
+        date = newUser[2].split('-')
+        joindate = datetime.datetime(int(date[0]), int(date[1]), int(date[2]), int(date[3]), int(date[4]), int(date[5]))
+        lastSignIn = signInHistory.lastSignIn(accounts.currentUser)
+        if datetime.datetime.now() > joindate and lastSignIn and joindate > lastSignIn:
+            print(f"A new user {newUser[0]} {newUser[1]} has joined InCollege!")
 
 def actionsMenu():        # Menu after logging in. Sub to initialScreen()
     signIn()
-    selection = int(input("\nPlease select a menu option:\n1. Find or Post a job\n2. Find a friend\n3. Message Menu\n4. Learn a new skill\n5. Useful Links\n6. InCollege Important Links\n7. Profile Management\n8. Sign Out\n-> "))
+    selection = int(input("\nPlease select a menu option:\n1. Jobs\n2. Find a friend\n3. Message Menu\n4. Learn a new skill\n5. Useful Links\n6. InCollege Important Links\n7. Profile Management\n8. Sign Out\n-> "))
     while True:
         if selection == 1:
             createOrFindJobMenu()
@@ -736,7 +816,7 @@ def actionsMenu():        # Menu after logging in. Sub to initialScreen()
             print("\nSigning you out...\n")
             accounts.currentUser = None
             return
-        selection = int(input("\nPlease select a menu option:\n1. Find or Post a job\n2. Find a friend\n3. Message Menu\n4. Learn a new skill\n5. Useful Links\n6. InCollege Important Links\n7. Profile Management\n8. Sign Out\n-> "))
+        selection = int(input("\nPlease select a menu option:\n1. Jobs\n2. Find a friend\n3. Message Menu\n4. Learn a new skill\n5. Useful Links\n6. InCollege Important Links\n7. Profile Management\n8. Sign Out\n-> "))
         
 def usefulLinks():    # Menu for incollege
     print("\nPlease choose between the options:\n1. General\n2. Browse InCollege\n3. Business Solutions\n4. Directories\n5. Back")
@@ -826,8 +906,14 @@ def createOrViewProfileMenu():
 
 def createOrFindJobMenu():        # Menu to search job listings or create a new job. sub to actionsMenu()
     while True:
+        if jobapps.countJobApps(accounts.currentUser) == 0:
+            print("\nYou have not applied to any jobs yet!")
+        elif jobapps.countJobApps(accounts.currentUser) == 1:
+            print("\nYou have applied for 1 job!")
+        else:
+            print(f"You have applied for {jobapps.countJobApps(accounts.currentUser)} jobs!")
         deletedJobNoti(accounts.currentUser)
-        option = int(input("\nPlease make a job related selection:\n1. Search posted jobs\n2. Create a job listing\n3. Back\n-> "))
+        option = int(input("\nPlease make a job related selection:\n1. Search posted jobs\n2. Jobs Management\n3. Back\n-> "))
         if option == 1:
             while True:
                 preference = int(input("1. View all jobs\n2. View applied jobs\n3. View not applied jobs\n4. View saved jobs\n5. Back\n-> "))
@@ -842,7 +928,7 @@ def createOrFindJobMenu():        # Menu to search job listings or create a new 
                 else: break
         elif option == 2:
             while True:
-                preference = int(input("1. View my job postings\n2. Create a job listing\n3. Back\n-> "))
+                preference = int(input("1. View/Delete my job postings\n2. Create a job listing\n3. Back\n-> "))
                 if preference == 1:
                     myJobPostings(accounts.currentUser)
                 elif preference == 2:
@@ -871,7 +957,9 @@ def myJobPostings(current_user):    # check curr_users job postings
             break
 
 def deletedJobNoti(current_user):       # shows notification that a job that curr_user applied to has been deleted
-    if jobapps.deletedJobNoti(current_user): print("A job that you applied for has been deleted")
+    deletedjobs = jobapps.deletedJobNoti(current_user)
+    for job in deletedjobs:
+        print(f"Job {job} has been deleted")
 
 def viewJobDetails(current_user, job_ID):    # shows more information on job and allows application to job
     jobs.displayAJob(job_ID)
@@ -1131,6 +1219,8 @@ def main():    # Main function, start of program
     global profiles
     global jobapps
     global messages
+    global signInHistory
+    signInHistory = SignInHistory("incollege")
     messages = Message("incollege")
     profiles = ProfilesCreation("incollege")
     jobs = JobPosting("incollege")
