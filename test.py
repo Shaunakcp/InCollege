@@ -1,7 +1,5 @@
-        
 from turtle import title
 import incollege
-
 
 
 # This test_ case tests whether there's userTest1 in the username database
@@ -14,7 +12,8 @@ def test_RepeatedUsername_1():
 def test_RepeatedUsername_2():
     global accounts
     accounts = incollege.AccountCreation("test")
-    accounts.addAccount("userTest1", "Password-123", "first", "last", "USF", "CS")
+    accounts.addAccount("userTest1", "Password-123", "first", "last", "USF",
+                        "CS")
     assert not accounts.checkExistingUsername("userTest1")
 
 
@@ -59,67 +58,79 @@ def test_Password_6():
     accounts = incollege.AccountCreation("test")
     assert not accounts.checkPasswordConvention("Pass- 412")
 
+
 # TESTING ACCOUNT LIMIT IS 10 USERS
-    
+
+
 # Account limit 2/10
 def test_AccountLimit_2():
     accounts = incollege.AccountCreation("test")
-    accounts.addAccount("userTest2", "Password-123", "first2", "last2", "USF", "CS")
+    accounts.addAccount("userTest2", "Password-123", "first2", "last2", "USF",
+                        "CS")
     assert accounts.checkLimit()
 
 
 # Account limit 3/10
 def test_AccountLimit_3():
     accounts = incollege.AccountCreation("test")
-    accounts.addAccount("userTest3", "Password-123", "first3", "last3", "USF", "CS")
+    accounts.addAccount("userTest3", "Password-123", "first3", "last3", "USF",
+                        "CS")
     assert accounts.checkLimit()
 
 
 # Account limit 4/10
 def test_AccountLimit_4():
     accounts = incollege.AccountCreation("test")
-    accounts.addAccount("userTest4", "Password-123", "first4", "last4", "USF", "CS")
+    accounts.addAccount("userTest4", "Password-123", "first4", "last4", "USF",
+                        "CS")
     assert accounts.checkLimit()
 
 
 # Account limit 5/10
 def test_AccountLimit_5():
     accounts = incollege.AccountCreation("test")
-    accounts.addAccount("userTest5", "Password-123", "first5", "last5", "USF", "CS")
+    accounts.addAccount("userTest5", "Password-123", "first5", "last5", "USF",
+                        "CS")
     assert accounts.checkLimit()
+
 
 # Account limit 6/10
 def test_AccountLimit_6():
     accounts = incollege.AccountCreation("test")
-    accounts.addAccount("userTest6", "Password-123", "first6", "last6", "USF", "CS")
+    accounts.addAccount("userTest6", "Password-123", "first6", "last6", "USF",
+                        "CS")
     assert accounts.checkLimit()
 
 
 # Account limit 7/10
 def test_AccountLimit_7():
     accounts = incollege.AccountCreation("test")
-    accounts.addAccount("userTest7", "Password-123", "first7", "last7", "USF", "CS")
+    accounts.addAccount("userTest7", "Password-123", "first7", "last7", "USF",
+                        "CS")
     assert accounts.checkLimit()
 
 
 # Account limit 8/10
 def test_AccountLimit_8():
     accounts = incollege.AccountCreation("test")
-    accounts.addAccount("userTest8", "Password-123", "first8", "last8", "USF", "CS")
+    accounts.addAccount("userTest8", "Password-123", "first8", "last8", "USF",
+                        "CS")
     assert accounts.checkLimit()
 
 
 # Account limit 9/10
 def test_AccountLimit_9():
     accounts = incollege.AccountCreation("test")
-    accounts.addAccount("userTest9", "Password-123", "first9", "last9", "USF", "CS")
+    accounts.addAccount("userTest9", "Password-123", "first9", "last9", "USF",
+                        "CS")
     assert accounts.checkLimit()
 
 
 # They're too many accounts
 def test_AccountLimit_10():
     accounts = incollege.AccountCreation("test")
-    accounts.addAccount("userTest10", "Password-123", "first10", "last10", "USF", "CS")
+    accounts.addAccount("userTest10", "Password-123", "first10", "last10",
+                        "USF", "CS")
     assert not accounts.checkLimit()
 
 
@@ -186,7 +197,9 @@ def test_jobLimitTest_6():
                 "testUser6")
     assert jobs.checkLimit()
 
+
 # Increased Job limit to 10
+
 
 def test_jobLimitTest_7():
     jobs = incollege.JobPosting("test")
@@ -194,11 +207,13 @@ def test_jobLimitTest_7():
                 "testUser7")
     assert jobs.checkLimit()
 
+
 def test_jobLimitTest_8():
     jobs = incollege.JobPosting("test")
     jobs.addJob("title8", "description8", "employer8", "location8", "salary8",
                 "testUser8")
     assert jobs.checkLimit()
+
 
 def test_jobLimitTest_9():
     jobs = incollege.JobPosting("test")
@@ -206,22 +221,25 @@ def test_jobLimitTest_9():
                 "testUser9")
     assert jobs.checkLimit()
 
+
 #Determine if At limit
 def test_jobLimitTest_10():
     jobs = incollege.JobPosting("test")
-    jobs.addJob("title10", "description10", "employer10", "location10", "salary10",
-                "testUser10")
+    jobs.addJob("title10", "description10", "employer10", "location10",
+                "salary10", "testUser10")
     assert not jobs.checkLimit()
+
 
 #Determine if over limit
 def test_jobLimitTest_11():
     jobs = incollege.JobPosting("test")
-    jobs.addJob("title11", "description11", "employer11", "location11", "salary11",
-                "testUser11")
+    jobs.addJob("title11", "description11", "employer11", "location11",
+                "salary11", "testUser11")
     assert not jobs.checkLimit()
 
 
 # Epic 3 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 
 # Test for email notification option
 def test_emailnotificationTest_1():
@@ -237,7 +255,7 @@ def test_emailnotificationTest_2():
     accounts = incollege.AccountCreation("test")
     accounts.currentUser = "userTest7"
     accounts.updateGuestControls("Off", "On", "On")
-    _ , _, _, _, _, _, email, _, _, _ = accounts.searchAccount("userTest7")
+    _, _, _, _, _, _, email, _, _, _ = accounts.searchAccount("userTest7")
     assert email == "Off"
 
 
@@ -316,48 +334,53 @@ def test_signinLanguageTest_2():
 
 # Test for 10 Account limit -- in previous userlimit test cases
 
+
 # test friend list initialized to empty
 def test_friendListInitEmpty():
     global accounts
     accounts = incollege.AccountCreation("test")
     accounts.currentUser = "userTest1"
-    
+
     global friends
     friends = incollege.Friends("test")
-    
+
     assert not friends.listOfFriends(accounts.currentUser)
-    
+
+
 # search for others' accounts by lastname, uni, or major
 def test_searchForFriendsUni():
     global accounts
     accounts = incollege.AccountCreation("test")
     accounts.currentUser = "userTest1"
-    
+
     global friends
     friends = incollege.Friends("test")
-    
-    assert friends.searchForFriends("N/A","USF","N/A")
+
+    assert friends.searchForFriends("N/A", "USF", "N/A")
+
 
 def test_searchForFriendsLastName():
     global accounts
     accounts = incollege.AccountCreation("test")
     accounts.currentUser = "userTest1"
-    
+
     global friends
     friends = incollege.Friends("test")
-    
+
     assert friends.searchForFriends("last10", "N/A", "N/A")
+
 
 def test_searchForFriendsMajor():
     global accounts
     accounts = incollege.AccountCreation("test")
     accounts.currentUser = "userTest1"
-    
+
     global friends
     friends = incollege.Friends("test")
-    
+
     assert friends.searchForFriends("N/A", "N/A", "CS")
-    
+
+
 # pending friend requests
 def test_pendingFriendRequests():
     global accounts
@@ -365,10 +388,11 @@ def test_pendingFriendRequests():
     accounts.currentUser = "userTest1"
     global friends
     friends = incollege.Friends("test")
-    
+
     assert not friends.checkIfPending(accounts.currentUser, "Test11")
-        
- # Epic 5  22 Oct 2022 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Epic 5  22 Oct 2022 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 
 # Newly created user does not have a profile
 def test_emptyProfile():
@@ -379,6 +403,7 @@ def test_emptyProfile():
     accounts.currentUser = "userTest1"
     assert profiles.checkExistingUsername('userTest1')
 
+
 # Check for Title in Profile
 def test_ProfileTitle():
     global accounts
@@ -388,8 +413,11 @@ def test_ProfileTitle():
     accounts.currentUser = "userTest1"
     profiles.addProfileUser("userTest1")
     profiles.addTitle(accounts.currentUser, "SWE")
-    rows = profiles._cur.execute("SELECT title FROM profiles WHERE profile_user = ?", (accounts.currentUser,))
+    rows = profiles._cur.execute(
+        "SELECT title FROM profiles WHERE profile_user = ?",
+        (accounts.currentUser, ))
     assert rows.fetchall()[0][0] == "SWE"
+
 
 # Check for Major name convention
 def test_ProfileMajor():
@@ -400,8 +428,11 @@ def test_ProfileMajor():
     accounts.currentUser = "userTest1"
     profiles.addProfileUser("userTest1")
     profiles.addMajor(accounts.currentUser, "cOmPuTer ScIence")
-    rows = profiles._cur.execute("SELECT major FROM profiles WHERE profile_user = ?", (accounts.currentUser,))
+    rows = profiles._cur.execute(
+        "SELECT major FROM profiles WHERE profile_user = ?",
+        (accounts.currentUser, ))
     assert rows.fetchall()[0][0] == "Computer Science"
+
 
 # Check for University name convention
 def test_ProfileUni():
@@ -412,8 +443,11 @@ def test_ProfileUni():
     accounts.currentUser = "userTest1"
     profiles.addProfileUser("userTest1")
     profiles.addUni(accounts.currentUser, "uNiVerSity oF fLoridA")
-    rows = profiles._cur.execute("SELECT university FROM profiles WHERE profile_user = ?", (accounts.currentUser,))
+    rows = profiles._cur.execute(
+        "SELECT university FROM profiles WHERE profile_user = ?",
+        (accounts.currentUser, ))
     assert rows.fetchall()[0][0] == "University Of Florida"
+
 
 # Check for Info
 def test_ProfileInfo():
@@ -424,8 +458,11 @@ def test_ProfileInfo():
     accounts.currentUser = "userTest1"
     profiles.addProfileUser("userTest1")
     profiles.addInfo(accounts.currentUser, "I'm a Sophomore")
-    rows = profiles._cur.execute("SELECT info FROM profiles WHERE profile_user = ?", (accounts.currentUser,))
+    rows = profiles._cur.execute(
+        "SELECT info FROM profiles WHERE profile_user = ?",
+        (accounts.currentUser, ))
     assert rows.fetchall()[0][0] == "I'm a Sophomore"
+
 
 # Check for Experience
 def test_ProfileExp():
@@ -436,8 +473,11 @@ def test_ProfileExp():
     accounts.currentUser = "userTest1"
     profiles.addProfileUser("userTest1")
     profiles.addExp(accounts.currentUser, "I worked at USF for 10 years")
-    rows = profiles._cur.execute("SELECT experience FROM profiles WHERE profile_user = ?", (accounts.currentUser,))
+    rows = profiles._cur.execute(
+        "SELECT experience FROM profiles WHERE profile_user = ?",
+        (accounts.currentUser, ))
     assert rows.fetchall()[0][0] == "I worked at USF for 10 years"
+
 
 # Check for Education
 def test_ProfileEdu():
@@ -448,8 +488,11 @@ def test_ProfileEdu():
     accounts.currentUser = "userTest1"
     profiles.addProfileUser("userTest1")
     profiles.addEdu(accounts.currentUser, "USF from 2020 to 2024")
-    rows = profiles._cur.execute("SELECT education FROM profiles WHERE profile_user = ?", (accounts.currentUser,))
+    rows = profiles._cur.execute(
+        "SELECT education FROM profiles WHERE profile_user = ?",
+        (accounts.currentUser, ))
     assert rows.fetchall()[0][0] == "USF from 2020 to 2024"
+
 
 # Check for modifications
 def test_ProfileModification():
@@ -465,8 +508,16 @@ def test_ProfileModification():
     profiles.addInfo(accounts.currentUser, "I'm a Senior")
     profiles.addExp(accounts.currentUser, "I worked at USF for 2 years")
     profiles.addEdu(accounts.currentUser, "USF from 2020 to 2023")
-    rows = profiles._cur.execute("SELECT * FROM profiles WHERE profile_user = ?", (accounts.currentUser,))
-    assert rows.fetchall()[0] == (accounts.currentUser, "IT Support", "Information Technology", "University Of South Florida", "I'm a Senior", "I worked at USF for 2 years", "USF from 2020 to 2023")
+    rows = profiles._cur.execute(
+        "SELECT * FROM profiles WHERE profile_user = ?",
+        (accounts.currentUser, ))
+    assert rows.fetchall()[0] == (accounts.currentUser, "IT Support",
+                                  "Information Technology",
+                                  "University Of South Florida",
+                                  "I'm a Senior",
+                                  "I worked at USF for 2 years",
+                                  "USF from 2020 to 2023")
+
 
 # Epic 6 10/30/2022 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -483,6 +534,7 @@ def test_check_SelfApplicationUser():
     accounts.currentUser = "userTest1"
     assert not jobs.selfApplyCheck('userTest1', 'title1')
 
+
 def test_checkIfapplied():
     global accounts
     global jobs
@@ -491,7 +543,7 @@ def test_checkIfapplied():
     accounts = incollege.AccountCreation("test")
     jobapps = incollege.JobApplication("test")
     accounts.currentUser = "userTest2"
-    jobapps.createApplication('userTest2','title1')
+    jobapps.createApplication('userTest2', 'title1')
     assert not jobapps.checkIfApplied('userTest1', 'title1')
 
 
@@ -504,8 +556,9 @@ def test_check_savedjob():
     accounts = incollege.AccountCreation("test")
     jobapps = incollege.JobApplication("test")
     accounts.currentUser = "userTest1"
-    jobapps.saveAJob('userTest1','title1')
+    jobapps.saveAJob('userTest1', 'title1')
     assert jobapps.checkIfSaved('userTest1', 'title1')
+
 
 def test_unsavignJob():
     global accounts
@@ -515,11 +568,12 @@ def test_unsavignJob():
     accounts = incollege.AccountCreation("test")
     jobapps = incollege.JobApplication("test")
     accounts.currentUser = "userTest1"
-    jobapps.unsaveAJob('userTest1','title1')
+    jobapps.unsaveAJob('userTest1', 'title1')
     assert not jobapps.checkIfSaved('userTest1', 'title1')
 
 
-# Epic 7 11/06/2022 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Epic 7 Due: 11/06/2022 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 
 # checks if A users tier should be standard
 def test_checkStandard_Tier():
@@ -528,6 +582,8 @@ def test_checkStandard_Tier():
     membership = incollege.AccountCreation("test")
     accounts = incollege.AccountCreation("test")
     assert not membership.checkTier('userTest1')
+
+
 # checks if A users changes tier from standard and becomes plus
 def test_Plus_Tier():
     global accounts
@@ -537,6 +593,7 @@ def test_Plus_Tier():
     membership.changeTier('userTest1')
     assert membership.checkTier
 
+
 # checks if A users message to a friend is working
 def test_newMessage():
     global accounts
@@ -545,8 +602,9 @@ def test_newMessage():
     membership = incollege.AccountCreation("test")
     accounts = incollege.AccountCreation("test")
     messages = incollege.Message("test")
-    messages.addMessage('Hello friend!','userTest1','userTest10')
+    messages.addMessage('Hello friend!', 'userTest1', 'userTest10')
     assert messages.haveNewMessages('userTest10') == 1
+
 
 # checks if A users message is unread by default
 def test_unreadMessages():
@@ -556,7 +614,8 @@ def test_unreadMessages():
     membership = incollege.AccountCreation("test")
     accounts = incollege.AccountCreation("test")
     messages = incollege.Message("test")
-    assert messages.haveUnreadMessages('userTest1','userTest10') == 1
+    assert messages.haveUnreadMessages('userTest1', 'userTest10') == 1
+
 
 # checks if A users message is highlighted as read when read by recipent.
 def test_readMessages():
@@ -567,9 +626,10 @@ def test_readMessages():
     accounts = incollege.AccountCreation("test")
     messages = incollege.Message("test")
     messages.markAsRead(1)
-    assert not messages.haveUnreadMessages('userTest1','userTest10') == 1
+    assert not messages.haveUnreadMessages('userTest1', 'userTest10') == 1
 
-# checks if A users message is deleted when deleteing 
+
+# checks if A users message is deleted when deleteing
 def test_deleteMessages():
     global accounts
     global membership
@@ -581,4 +641,45 @@ def test_deleteMessages():
     assert not messages.haveNewMessages('userTest10') == 1
 
 
+# Epic 8 Notifications, Due: 11/14/2022 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+
+# testing that a new user has not applied to a job and therefore will receive a notification
+def test_userNotAppliedToJob7Days():
+    global accounts
+    global jobs
+    global jobapps
+    assert jobapps.haveNotApplied("userTest10")
+
+
+# test that user will see number of jobs they applied for when they go to jobs section
+def test_numOfJobsApplied0():
+    global accounts
+    global jobs
+    global jobapps
+    assert not jobapps.countJobApps("userTest10")
+
+
+# test if a user has applied to atleast one job
+def test_numOfJobsApplied1():
+    global accounts
+    global jobs
+    global jobapps
+    jobs = incollege.JobPosting("test")
+    accounts = incollege.AccountCreation("test")
+    jobapps = incollege.JobApplication("test")
+    accounts.currentUser = "userTest3"
+    jobapps.createApplication('userTest3', 'title1')
+    assert not jobapps.haveNotApplied("userTest3")
+
+
+# test that a user will have a message notification if they have unread messages
+def test_userHasMessagesNotification():
+    global accounts
+    global membership
+    global messages
+    membership = incollege.AccountCreation("test")
+    accounts = incollege.AccountCreation("test")
+    messages = incollege.Message("test")
+    messages.addMessage('Hello friend!', 'userTest1', 'userTest10')
+    assert messages.haveNewMessages('userTest10')
