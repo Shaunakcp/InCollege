@@ -246,7 +246,7 @@ def test_emailnotificationTest_1():
     global accounts
     accounts = incollege.AccountCreation("test")
     accounts.currentUser = "userTest1"
-    _, _, _, _, _, _, _, email, _, _ = accounts.searchAccount("userTest7")
+    _, _, _, _, _, _, email, _, _, _, _ = accounts.searchAccount("userTest7")
     assert email == "On"
 
 
@@ -255,7 +255,7 @@ def test_emailnotificationTest_2():
     accounts = incollege.AccountCreation("test")
     accounts.currentUser = "userTest7"
     accounts.updateGuestControls("Off", "On", "On")
-    _, _, _, _, _, _, email, _, _, _ = accounts.searchAccount("userTest7")
+    _, _, _, _, _, _, email, _, _, _, _ = accounts.searchAccount("userTest7")
     assert email == "Off"
 
 
@@ -264,7 +264,7 @@ def test_smsnotificationTest_1():
     global accounts
     accounts = incollege.AccountCreation("test")
     accounts.currentUser = "userTest7"
-    _, _, _, _, _, _, _, sms, _, _ = accounts.searchAccount("userTest7")
+    _, _, _, _, _, _, _, sms, _, _, _ = accounts.searchAccount("userTest7")
     assert sms == "On"
 
 
@@ -273,7 +273,7 @@ def test_smsnotificationTest_2():
     accounts = incollege.AccountCreation("test")
     accounts.currentUser = "userTest7"
     accounts.updateGuestControls("On", "Off", "On")
-    _, _, _, _, _, _, _, sms, _, _ = accounts.searchAccount("userTest7")
+    _, _, _, _, _, _, _, sms, _, _, _ = accounts.searchAccount("userTest7")
     assert sms == "Off"
 
 
@@ -282,7 +282,7 @@ def test_adFeaturesTest_1():
     global accounts
     accounts = incollege.AccountCreation("test")
     accounts.currentUser = "userTest7"
-    _, _, _, _, _, _, _, _, adFeatures, _ = accounts.searchAccount("userTest7")
+    _, _, _, _, _, _, _, _, adFeatures, _, _ = accounts.searchAccount("userTest7")
     assert adFeatures == "On"
 
 
@@ -291,7 +291,7 @@ def test_adFeaturesTest_2():
     accounts = incollege.AccountCreation("test")
     accounts.currentUser = "userTest7"
     accounts.updateGuestControls("On", "On", "Off")
-    _, _, _, _, _, _, _, _, adFeatures, _ = accounts.searchAccount("userTest7")
+    _, _, _, _, _, _, _, _, adFeatures, _, _ = accounts.searchAccount("userTest7")
     assert adFeatures == "Off"
 
 
@@ -543,8 +543,8 @@ def test_checkIfapplied():
     accounts = incollege.AccountCreation("test")
     jobapps = incollege.JobApplication("test")
     accounts.currentUser = "userTest2"
-    jobapps.createApplication('userTest2', 'title1')
-    assert not jobapps.checkIfApplied('userTest1', 'title1')
+    jobapps.createApplication('userTest2', 1)
+    assert not jobapps.checkIfApplied('userTest1', 1)
 
 
 # user cannot save job more than once
@@ -556,8 +556,8 @@ def test_check_savedjob():
     accounts = incollege.AccountCreation("test")
     jobapps = incollege.JobApplication("test")
     accounts.currentUser = "userTest1"
-    jobapps.saveAJob('userTest1', 'title1')
-    assert jobapps.checkIfSaved('userTest1', 'title1')
+    jobapps.saveAJob('userTest1', 1)
+    assert jobapps.checkIfSaved('userTest1', 1)
 
 
 def test_unsavignJob():
@@ -669,7 +669,7 @@ def test_numOfJobsApplied1():
     accounts = incollege.AccountCreation("test")
     jobapps = incollege.JobApplication("test")
     accounts.currentUser = "userTest3"
-    jobapps.createApplication('userTest3', 'title1')
+    jobapps.createApplication('userTest3', 1)
     assert not jobapps.haveNotApplied("userTest3")
 
 

@@ -1,9 +1,7 @@
 import sqlite3           # database used to store account & job information
 import datetime
 
-class Notification:
-    pass
-    
+
 class Message:
     def __init__(self, dbName):
         self._db = sqlite3.connect(f"./{dbName}.db")
