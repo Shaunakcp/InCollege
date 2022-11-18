@@ -1,5 +1,6 @@
 import sqlite3           # database used to store account & job information
 import datetime
+import os
 
 
 class Message:
@@ -228,7 +229,7 @@ class JobPosting:            # class for creating job listings
         self._cur.execute("UPDATE jobapps SET 'status' = ? WHERE jobID = ?", ('deleted', job_ID)) # updates job status in jobapps table to 'deleted'
         self.commit()
 
-    def newJobPostings(self, current_user):
+    def newJobPostings(self, current_user): # func returns all new job postings
         rows = self._cur.execute("SELECT title, timepost FROM jobs WHERE poster != ?", (current_user,))
         return rows.fetchall()
             
@@ -239,7 +240,14 @@ class JobPosting:            # class for creating job listings
         self._cur.close()
         self._db.close()
 
-    def APIinputHandling(self):
+    def checkUniqueTitle(self, title): # func checks if job title is unique
+        rows = self._cur.execute("SELECT COUNT(*) FROM jobs WHERE title = ?", (title,))
+        for row in rows:
+            if row[0] != 0:
+                return False
+        return True
+
+    def APIinputHandling(self): # func handles input from API
         try:
             with open("newJobs.txt", 'r') as f:
                 lines = f.readlines()
@@ -247,7 +255,7 @@ class JobPosting:            # class for creating job listings
                 i = 0
                 for line in lines:
                     if line == '=====\n':
-                        if self.checkLimit():
+                        if self.checkLimit() and self.checkUniqueTitle(data[0]):
                             self.addJob(data[0], data[1], data[3], data[4], float(data[5]), data[2])
                         i = 0
                         data = []
@@ -266,8 +274,9 @@ class JobPosting:            # class for creating job listings
                     self.addJob(data[0], data[1], data[3], data[4], float(data[5]), data[2])
         except FileNotFoundError:
             print("newJobs.txt not found")
+        os.remove("newJobs.txt")
 
-    def APIoutputHandling(self):
+    def APIoutputHandling(self): # func handles output to API
         try:
             with open("MyCollege_jobs.txt", 'w') as f:
                 rows = self._cur.execute("SELECT title, description, poster, employer, location, salary, FROM jobs")
@@ -289,11 +298,11 @@ class SignInHistory:
         self._cur.execute("CREATE TABLE IF NOT EXISTS signinhistory ('username' TEXT NOT NULL, 'timesign' TEXT NOT NULL)")
         self._db.commit()
     
-    def addSignIn(self, username):
+    def addSignIn(self, username): # func adds a new sign in to the signinhistory table
         self._cur.execute("INSERT INTO signinhistory ('username', 'timesign') VALUES (?, ?)", (username, datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")))
         self.commit()
 
-    def lastSignIn(self, username):
+    def lastSignIn(self, username): # func returns the last sign in of a user
         rows = self._cur.execute("SELECT timesign FROM signinhistory WHERE username = ? ORDER BY timesign DESC LIMIT 1", (username,))
         row = rows.fetchall()
         if row == []:
@@ -301,10 +310,10 @@ class SignInHistory:
         date = row[0][0].split("-")
         return datetime.datetime(int(date[0]), int(date[1]), int(date[2]), int(date[3]), int(date[4]), int(date[5]))
 
-    def commit(self):
+    def commit(self): # func commits changes to the database
         self._db.commit()
 
-    def close(self):
+    def close(self): # func closes the database
         self._cur.close()
         self._db.close()
 
@@ -504,6 +513,7 @@ class AccountCreation:        # class for creating accounts
                     self.addAccount(data[0], data[3], data[1], data[2], 'N/A', 'N/A')
         except FileNotFoundError:
             print("studentAccounts.txt not found")
+        os.remove('studentAccounts.txt')
 
     def APIoutputHandling(self):
         try:
