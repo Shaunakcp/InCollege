@@ -172,8 +172,8 @@ class JobPosting:            # class for creating job listings
         # Creating a table in SQL file to store account info
         self._cur.execute("CREATE TABLE IF NOT EXISTS jobs ('jobID' INTEGER PRIMARY KEY AUTOINCREMENT, 'title' TEXT NOT NULL, 'description' TEXT NOT NULL, 'employer' TEXT NOT NULL, 'location' TEXT NOT NULL, 'salary' TEXT NOT NULL, 'poster' TEXT NOT NULL, 'timepost' TEXT NOT NULL)")
         self._db.commit()
-        #self.APIoutputHandling()
         self.APIinputHandling()
+        self.APIoutputHandling()
 
         
     def checkLimit(self): # Checking whether the number of jobs has reached the limit of 5
@@ -341,8 +341,8 @@ class AccountCreation:        # class for creating accounts
         self.currentUser = None
         self.language = "English"
         self._db.commit()
-        self.APIoutputHandling()
         self.APIinputHandling()
+        self.APIoutputHandling()
         
 
     def listOfUsers(self, username):        # func returns list of all usernames
@@ -669,7 +669,7 @@ class ProfilesCreation:
     def APIoutputHandling(self):
         try:
             with open("MyCollege_profiles.txt", "w") as f:
-                rows = self._cur.execute("SELECT title, major, university, info, experience, education FROM profiles")
+                rows = self._cur.execute("SELECT * FROM profiles")
                 for row in rows:
                     f.write(row[0] + "\n")
                     f.write(row[1] + "\n")
@@ -677,6 +677,7 @@ class ProfilesCreation:
                     f.write(row[3] + "\n")
                     f.write(row[4] + "\n")
                     f.write(row[5] + "\n")
+                    f.write(row[6] + "\n")
                     f.write("=====\n")
         except:
             print("Error: Unable to write to MyCollege_profiles.txt")

@@ -683,3 +683,4 @@ def test_userHasMessagesNotification():
     messages = incollege.Message("test")
     messages.addMessage('Hello friend!', 'userTest1', 'userTest10')
     assert messages.haveNewMessages('userTest10')
+
