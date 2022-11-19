@@ -1,5 +1,6 @@
 import sqlite3           # database used to store account & job information
 import datetime
+import os
 
 
 class Message:
@@ -137,6 +138,24 @@ class JobApplication:
         self._cur.close()
         self._db.close()
 
+    def APIoutputHandling_appliedJobs(self):
+        try:
+            with open("MyCollege_appliedJobs.txt", "w") as f:
+                rows = self._cur.execute("SELECT title, applicantID, details FROM jobapps JOIN appinfos WHERE status = ?", ('applied',))
+                for row in rows:
+                    f.write(row[0] + '\n' + row[1] + '\n' + row[2] + '\n&&&\n' + '=====\n')
+        except:
+            print("Unable to write to MyCollege_appliedJobs.txt")
+
+    def APIoutputHandling_savedJobs(self):
+        try:
+            with open("MyCollege_savedJobs.txt", "w") as f:
+                rows = self._cur.execute("SELECT title, applicantID FROM jobapps WHERE status = ?", ('saved',))
+                for row in rows:
+                    f.write(row[0] + '\n' + row[1] + '\n=====\n')
+        except:
+            print("Unable to write to MyCollege_savedJobs.txt")
+
 
 class JobPosting:            # class for creating job listings
     def __init__(self, dbName):
@@ -145,6 +164,7 @@ class JobPosting:            # class for creating job listings
         # Creating a table in SQL file to store account info
         self._cur.execute("CREATE TABLE IF NOT EXISTS jobs ('jobID' INTEGER PRIMARY KEY AUTOINCREMENT, 'title' TEXT NOT NULL, 'description' TEXT NOT NULL, 'employer' TEXT NOT NULL, 'location' TEXT NOT NULL, 'salary' FLOAT NOT NULL, 'poster' TEXT NOT NULL, 'timepost' TEXT NOT NULL)")
         self._db.commit()
+        self.APIinputHandling()
         
     def checkLimit(self): # Checking whether the number of jobs has reached the limit of 5
         rows = self._cur.execute("SELECT COUNT(*) FROM jobs")
@@ -209,7 +229,7 @@ class JobPosting:            # class for creating job listings
         self._cur.execute("UPDATE jobapps SET 'status' = ? WHERE jobID = ?", ('deleted', job_ID)) # updates job status in jobapps table to 'deleted'
         self.commit()
 
-    def newJobPostings(self, current_user):
+    def newJobPostings(self, current_user): # func returns all new job postings
         rows = self._cur.execute("SELECT title, timepost FROM jobs WHERE poster != ?", (current_user,))
         return rows.fetchall()
             
@@ -220,6 +240,57 @@ class JobPosting:            # class for creating job listings
         self._cur.close()
         self._db.close()
 
+    def checkUniqueTitle(self, title): # func checks if job title is unique
+        rows = self._cur.execute("SELECT COUNT(*) FROM jobs WHERE title = ?", (title,))
+        for row in rows:
+            if row[0] != 0:
+                return False
+        return True
+
+    def APIinputHandling(self): # func handles input from API
+        try:
+            with open("newJobs.txt", 'r') as f:
+                lines = f.readlines()
+                data = []
+                i = 0
+                for line in lines:
+                    if line == '=====\n':
+                        if self.checkLimit() and self.checkUniqueTitle(data[0]):
+                            self.addJob(data[0], data[1], data[3], data[4], float(data[5]), data[2])
+                        i = 0
+                        data = []
+                        continue
+                    if i != 1:
+                        data.append(line.rstrip('\n'))
+                        i += 1
+                    elif line != '&&&\n':
+                        if len(data) < 2:
+                            data.append(line.rstrip('\n'))
+                        else:
+                            data[1] += '\n' + line.rstrip('\n')
+                    elif line == '&&&\n':
+                        i += 1
+                if self.checkLimit() and data != []:
+                    self.addJob(data[0], data[1], data[3], data[4], float(data[5]), data[2])
+        except FileNotFoundError:
+            print("newJobs.txt not found")
+        os.remove("newJobs.txt")
+
+    def APIoutputHandling(self): # func handles output to API
+        try:
+            with open("MyCollege_jobs.txt", 'w') as f:
+                rows = self._cur.execute("SELECT title, description, poster, employer, location, salary, FROM jobs")
+                for row in rows:
+                    f.write(row[0] + '\n')
+                    f.write(row[1] + '\n&&&\n')
+                    f.write(row[2] + '\n')
+                    f.write(row[3] + '\n')
+                    f.write(row[4] + '\n')
+                    f.write(row[5] + '\n')
+                    f.write('=====\n')
+        except:
+            print("Unable to write to MyCollege_jobs.txt")
+
 class SignInHistory:
     def __init__(self, dbname):
         self._db = sqlite3.connect(f"./{dbname}.db")
@@ -227,11 +298,11 @@ class SignInHistory:
         self._cur.execute("CREATE TABLE IF NOT EXISTS signinhistory ('username' TEXT NOT NULL, 'timesign' TEXT NOT NULL)")
         self._db.commit()
     
-    def addSignIn(self, username):
+    def addSignIn(self, username): # func adds a new sign in to the signinhistory table
         self._cur.execute("INSERT INTO signinhistory ('username', 'timesign') VALUES (?, ?)", (username, datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")))
         self.commit()
 
-    def lastSignIn(self, username):
+    def lastSignIn(self, username): # func returns the last sign in of a user
         rows = self._cur.execute("SELECT timesign FROM signinhistory WHERE username = ? ORDER BY timesign DESC LIMIT 1", (username,))
         row = rows.fetchall()
         if row == []:
@@ -239,10 +310,10 @@ class SignInHistory:
         date = row[0][0].split("-")
         return datetime.datetime(int(date[0]), int(date[1]), int(date[2]), int(date[3]), int(date[4]), int(date[5]))
 
-    def commit(self):
+    def commit(self): # func commits changes to the database
         self._db.commit()
 
-    def close(self):
+    def close(self): # func closes the database
         self._cur.close()
         self._db.close()
 
@@ -256,6 +327,7 @@ class AccountCreation:        # class for creating accounts
         self.currentUser = None
         self.language = "English"
         self._db.commit()
+        self.APIinputHandling()
 
     def listOfUsers(self, username):        # func returns list of all usernames
         rows = self._cur.execute("SELECT username, firstname, lastname FROM accounts WHERE username != ?", (username,))
@@ -424,6 +496,34 @@ class AccountCreation:        # class for creating accounts
         self._cur.execute("UPDATE accounts SET languagepreference = ? WHERE username = ?", (lang, self.currentUser))
         self.commit()
 
+    def APIinputHandling(self):
+        try:
+            with open("studentAccounts.txt", 'r') as f:
+                lines = f.readlines()
+                data = []
+                for line in lines:
+                    if line == '=====\n':
+                        if self.checkLimit():
+                            self.addAccount(data[0], data[3], data[1], data[2], 'N/A', 'N/A')
+                        data = []
+                        continue
+                    line = line.strip('\n')
+                    data += line.split(' ')
+                if self.checkLimit() and data != []:
+                    self.addAccount(data[0], data[3], data[1], data[2], 'N/A', 'N/A')
+        except FileNotFoundError:
+            print("studentAccounts.txt not found")
+        os.remove('studentAccounts.txt')
+
+    def APIoutputHandling(self):
+        try:
+            with open("MyCollege_users.txt", 'w') as f:
+                rows = self._cur.execute("SELECT * FROM membership")
+                for row in rows:
+                    f.write(row[0] + ' ' + row[1] + '\n')
+        except:
+            print("Unable to write to MyCollege_users.txt")
+
 class ProfilesCreation:
     def __init__(self, dbName):
         self._db = sqlite3.connect(f"./{dbName}.db")
@@ -541,6 +641,20 @@ class ProfilesCreation:
         self._cur.close()
         self._db.close()
 
+    def APIoutputHandling(self):
+        try:
+            with open("MyCollege_profiles.txt", "w") as f:
+                rows = self._cur.execute("SELECT title, major, university, info, experience, education FROM profiles")
+                for row in rows:
+                    f.write(row[0] + "\n")
+                    f.write(row[1] + "\n")
+                    f.write(row[2] + "\n")
+                    f.write(row[3] + "\n")
+                    f.write(row[4] + "\n")
+                    f.write(row[5] + "\n")
+                    f.write("=====\n")
+        except:
+            print("Error: Unable to write to MyCollege_profiles.txt")
 
 class Friends:
     def __init__(self, dbName):
