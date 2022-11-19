@@ -170,10 +170,11 @@ class JobPosting:            # class for creating job listings
         self._db = sqlite3.connect(f"./{dbName}.db")
         self._cur = self._db.cursor()
         # Creating a table in SQL file to store account info
-        self._cur.execute("CREATE TABLE IF NOT EXISTS jobs ('jobID' INTEGER PRIMARY KEY AUTOINCREMENT, 'title' TEXT NOT NULL, 'description' TEXT NOT NULL, 'employer' TEXT NOT NULL, 'location' TEXT NOT NULL, 'salary' FLOAT NOT NULL, 'poster' TEXT NOT NULL, 'timepost' TEXT NOT NULL)")
+        self._cur.execute("CREATE TABLE IF NOT EXISTS jobs ('jobID' INTEGER PRIMARY KEY AUTOINCREMENT, 'title' TEXT NOT NULL, 'description' TEXT NOT NULL, 'employer' TEXT NOT NULL, 'location' TEXT NOT NULL, 'salary' TEXT NOT NULL, 'poster' TEXT NOT NULL, 'timepost' TEXT NOT NULL)")
         self._db.commit()
+        #self.APIoutputHandling()
         self.APIinputHandling()
-        self.APIoutputHandling()
+
         
     def checkLimit(self): # Checking whether the number of jobs has reached the limit of 5
         rows = self._cur.execute("SELECT COUNT(*) FROM jobs")
@@ -185,8 +186,8 @@ class JobPosting:            # class for creating job listings
     def addJob(self, title, description, employer, location, salary, poster):        # Add job to SQL file
         query = "INSERT INTO jobs ('jobID', 'title', 'description', 'employer', 'location', 'salary', 'poster', 'timepost') VALUES (NULL, ?, ?, ?, ?, ?, ?, ?)"
         self._cur.execute(query, (title, description, employer, location, salary, poster, datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")))
-        self.APIoutputHandling()
         self.commit()
+        self.APIoutputHandling()
 
     def createAJob(self, current_user):        # Function to create job posting
         if not self.checkLimit():
@@ -231,18 +232,17 @@ class JobPosting:            # class for creating job listings
         print(f"Description: {row[2]}")
         print(f"Employer: {row[3]}")
         print(f"Location: {row[4]}")
-        print(f"Salary: ${row[5]:,.2f}")
+        print(f"Salary: ${float(row[5]):,.2f}")
 
     def deleteAJob(self, job_ID):        # func deletes job
         self._cur.execute("DELETE FROM jobs WHERE jobID = ?", (job_ID,))
         self.commit()
         self._cur.execute("UPDATE jobapps SET 'status' = ? WHERE jobID = ?", ('deleted', job_ID)) # updates job status in jobapps table to 'deleted'
-        self.APIoutputHandling()
         self.commit()
+        self.APIoutputHandling()
 
     def newJobPostings(self, current_user): # func returns all new job postings
         rows = self._cur.execute("SELECT title, timepost FROM jobs WHERE poster != ?", (current_user,))
-        self.APIoutputHandling()
         return rows.fetchall()
             
     def commit(self):
@@ -292,7 +292,7 @@ class JobPosting:            # class for creating job listings
     def APIoutputHandling(self): # func handles output to API
         try:
             with open("MyCollege_jobs.txt", 'w') as f:
-                rows = self._cur.execute("SELECT title, description, poster, employer, location, salary, FROM jobs")
+                rows = self._cur.execute("SELECT title, description, poster, employer, location, salary FROM jobs")
                 for row in rows:
                     f.write(row[0] + '\n')
                     f.write(row[1] + '\n&&&\n')
@@ -301,6 +301,7 @@ class JobPosting:            # class for creating job listings
                     f.write(row[4] + '\n')
                     f.write(row[5] + '\n')
                     f.write('=====\n')
+                self.commit()
         except:
             print("Unable to write to MyCollege_jobs.txt")
 
@@ -340,8 +341,8 @@ class AccountCreation:        # class for creating accounts
         self.currentUser = None
         self.language = "English"
         self._db.commit()
-        self.APIinputHandling()
         self.APIoutputHandling()
+        self.APIinputHandling()
         
 
     def listOfUsers(self, username):        # func returns list of all usernames
@@ -359,13 +360,13 @@ class AccountCreation:        # class for creating accounts
     def addAccount(self, userName, passWord, firstName, lastName, university, major): # Create new record in the Database after the input is verified
         query = "INSERT INTO accounts ('username', 'password', 'firstname', 'lastname', 'university', 'major', 'emailnoti', 'sms', 'adfeatures', 'languagepreference', 'timecreated') VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
         self._cur.execute(query, (userName, passWord, firstName, lastName, university, major, "On", "On", "On", "English", datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")))
-        self.APIoutputHandling()
         self.commit()
+        self.APIoutputHandling()
 
     def addTier(self, userName, tier):
         self._cur.execute("INSERT INTO membership ('username', 'tier') VALUES (?, ?)", (userName, tier))
-        self.APIoutputHandling()
         self.commit()
+        self.APIoutputHandling()
 
     def checkTier(self, userName): #return True if user is a Plus, False if user is a Standard
         rows = self._cur.execute("SELECT tier FROM membership WHERE username = ?", (userName,))
@@ -522,16 +523,18 @@ class AccountCreation:        # class for creating accounts
                     if line == '=====\n':
                         if self.checkLimit() and self.checkExistingUsername(data[0]):
                             self.addAccount(data[0], data[3], data[1], data[2], 'N/A', 'N/A')
+                            self.addTier(data[0], 'standard')
                         data = []
                         continue
                     line = line.strip('\n')
                     data += line.split(' ')
                 if self.checkLimit() and data != []:
                     self.addAccount(data[0], data[3], data[1], data[2], 'N/A', 'N/A')
+                    self.addTier(data[0], 'standard')
             os.remove('studentAccounts.txt')
         except FileNotFoundError:
             print("studentAccounts.txt not found")
-        
+
 
     def APIoutputHandling(self):
         try:
