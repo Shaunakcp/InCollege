@@ -66,6 +66,8 @@ class JobApplication:
         self._cur.execute("CREATE TABLE IF NOT EXISTS jobapps ('appID' INTEGER PRIMARY KEY AUTOINCREMENT, 'applicantID' TEXT NOT NULL, 'jobID' INTEGER NOT NULL, 'title' TEXT NOT NULL, 'status' TEXT NOT NULL, 'timeapp' TEXT NOT NULL)")
         self._cur.execute("CREATE TABLE IF NOT EXISTS appinfos ('appID' INTEGER NOT NULL, 'monGrad' INTEGER, 'dayGrad' INTEGER, 'yearGrad' INTEGER, 'monStart' INTEGER, 'dayStart' INTEGER, 'yearStart' INTEGER, 'details' TEXT NOT NULL, FOREIGN KEY (appID) REFERENCES jobapps (appID) ON DELETE CASCADE)")
         self._db.commit()
+        self.APIoutputHandling_appliedJobs()
+        self.APIoutputHandling_savedJobs()
 
     def checkIfApplied(self, applicant_ID, job_ID): # check whether the user already applied for the job
         rows = self._cur.execute("SELECT COUNT(*) FROM jobapps WHERE applicantID = ? AND jobID = ? AND status = ?", (applicant_ID, job_ID, 'applied'))
@@ -86,6 +88,7 @@ class JobApplication:
         for row in rows:
             title = row[0]
         self._cur.execute("INSERT INTO jobapps ('appID', 'applicantID', 'jobID', 'title', 'status', 'timeapp') VALUES (NULL, ?, ?, ?, ?, ?)", (applicant_ID, job_ID, title, 'applied', datetime.datetime.now().strftime("%Y-%m-%d")))
+        self.APIoutputHandling_appliedJobs()
         self.commit()
 
     def saveAJob(self, applicant_ID, job_ID): # create an application with status "saved" in jobapps table
@@ -93,20 +96,24 @@ class JobApplication:
         for row in rows:
             title = row[0]
         self._cur.execute("INSERT INTO jobapps ('appID', 'applicantID', 'jobID', 'title', 'status', 'timeapp') VALUES (NULL, ?, ?, ?, ?, ?)", (applicant_ID, job_ID, title, 'saved', datetime.datetime.now().strftime("%Y-%m-%d")))
+        self.APIoutputHandling_savedJobs()
         self.commit()
 
     def changeSavedToApplied(self, applicant_ID, job_ID): # change status from saved to applied
         self._cur.execute("UPDATE jobapps SET 'status' = ?, 'timeapp' = ? WHERE applicantID = ? AND jobID = ?", ("applied", datetime.datetime.now().strftime("%Y-%m-%d"), applicant_ID, job_ID))
+        self.APIoutputHandling_savedJobs()
         self.commit()
     
     def unsaveAJob(self, applicant_ID, job_ID): # delete the application that is marked save from jobapps table
         self._cur.execute("DELETE FROM jobapps WHERE applicantID = ? AND jobID = ?", (applicant_ID, job_ID))
+        self.APIoutputHandling_savedJobs()
         self.commit()
 
     def updateApplicationInfo(self, applicant_ID, job_ID, mon_grad, day_grad, year_grad, mon_start, day_start, year_start, details): # insert information about application to appinfo table after the application has been triggered
         rows = self._cur.execute("SELECT appID FROM jobapps WHERE applicantID = ? and jobID = ?", (applicant_ID, job_ID))
         appID = rows.fetchone()[0]
         self._cur.execute("INSERT INTO appinfos (appID, monGrad, dayGrad, yearGrad, monStart, dayStart, yearStart, details) VALUES (?,?,?,?,?,?,?,?)", (appID, mon_grad, day_grad, year_grad, mon_start, day_start, year_start, details))
+        self.APIoutputHandling_appliedJobs()
         self.commit()
 
     def deletedJobNoti(self, applicant_ID): # check if there's any jobs being deleted by the employer and then refresh the jobapps table and appinfo table by deleting those expired records
@@ -115,6 +122,7 @@ class JobApplication:
         for row in rows:
             list.append(row[0])
         self._cur.execute("DELETE FROM jobapps WHERE applicantID = ? AND status = ?", (applicant_ID, 'deleted'))
+        self.APIoutputHandling_appliedJobs()
         self.commit()
         return list
 
@@ -162,9 +170,11 @@ class JobPosting:            # class for creating job listings
         self._db = sqlite3.connect(f"./{dbName}.db")
         self._cur = self._db.cursor()
         # Creating a table in SQL file to store account info
-        self._cur.execute("CREATE TABLE IF NOT EXISTS jobs ('jobID' INTEGER PRIMARY KEY AUTOINCREMENT, 'title' TEXT NOT NULL, 'description' TEXT NOT NULL, 'employer' TEXT NOT NULL, 'location' TEXT NOT NULL, 'salary' FLOAT NOT NULL, 'poster' TEXT NOT NULL, 'timepost' TEXT NOT NULL)")
+        self._cur.execute("CREATE TABLE IF NOT EXISTS jobs ('jobID' INTEGER PRIMARY KEY AUTOINCREMENT, 'title' TEXT NOT NULL, 'description' TEXT NOT NULL, 'employer' TEXT NOT NULL, 'location' TEXT NOT NULL, 'salary' TEXT NOT NULL, 'poster' TEXT NOT NULL, 'timepost' TEXT NOT NULL)")
         self._db.commit()
+        #self.APIoutputHandling()
         self.APIinputHandling()
+
         
     def checkLimit(self): # Checking whether the number of jobs has reached the limit of 5
         rows = self._cur.execute("SELECT COUNT(*) FROM jobs")
@@ -177,6 +187,7 @@ class JobPosting:            # class for creating job listings
         query = "INSERT INTO jobs ('jobID', 'title', 'description', 'employer', 'location', 'salary', 'poster', 'timepost') VALUES (NULL, ?, ?, ?, ?, ?, ?, ?)"
         self._cur.execute(query, (title, description, employer, location, salary, poster, datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")))
         self.commit()
+        self.APIoutputHandling()
 
     def createAJob(self, current_user):        # Function to create job posting
         if not self.checkLimit():
@@ -221,13 +232,14 @@ class JobPosting:            # class for creating job listings
         print(f"Description: {row[2]}")
         print(f"Employer: {row[3]}")
         print(f"Location: {row[4]}")
-        print(f"Salary: ${row[5]:,.2f}")
+        print(f"Salary: ${float(row[5]):,.2f}")
 
     def deleteAJob(self, job_ID):        # func deletes job
         self._cur.execute("DELETE FROM jobs WHERE jobID = ?", (job_ID,))
         self.commit()
         self._cur.execute("UPDATE jobapps SET 'status' = ? WHERE jobID = ?", ('deleted', job_ID)) # updates job status in jobapps table to 'deleted'
         self.commit()
+        self.APIoutputHandling()
 
     def newJobPostings(self, current_user): # func returns all new job postings
         rows = self._cur.execute("SELECT title, timepost FROM jobs WHERE poster != ?", (current_user,))
@@ -272,14 +284,15 @@ class JobPosting:            # class for creating job listings
                         i += 1
                 if self.checkLimit() and data != []:
                     self.addJob(data[0], data[1], data[3], data[4], float(data[5]), data[2])
+            os.remove("newJobs.txt")
         except FileNotFoundError:
             print("newJobs.txt not found")
-        os.remove("newJobs.txt")
+        
 
     def APIoutputHandling(self): # func handles output to API
         try:
             with open("MyCollege_jobs.txt", 'w') as f:
-                rows = self._cur.execute("SELECT title, description, poster, employer, location, salary, FROM jobs")
+                rows = self._cur.execute("SELECT title, description, poster, employer, location, salary FROM jobs")
                 for row in rows:
                     f.write(row[0] + '\n')
                     f.write(row[1] + '\n&&&\n')
@@ -288,6 +301,7 @@ class JobPosting:            # class for creating job listings
                     f.write(row[4] + '\n')
                     f.write(row[5] + '\n')
                     f.write('=====\n')
+                self.commit()
         except:
             print("Unable to write to MyCollege_jobs.txt")
 
@@ -327,7 +341,9 @@ class AccountCreation:        # class for creating accounts
         self.currentUser = None
         self.language = "English"
         self._db.commit()
+        self.APIoutputHandling()
         self.APIinputHandling()
+        
 
     def listOfUsers(self, username):        # func returns list of all usernames
         rows = self._cur.execute("SELECT username, firstname, lastname FROM accounts WHERE username != ?", (username,))
@@ -345,10 +361,12 @@ class AccountCreation:        # class for creating accounts
         query = "INSERT INTO accounts ('username', 'password', 'firstname', 'lastname', 'university', 'major', 'emailnoti', 'sms', 'adfeatures', 'languagepreference', 'timecreated') VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
         self._cur.execute(query, (userName, passWord, firstName, lastName, university, major, "On", "On", "On", "English", datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")))
         self.commit()
+        self.APIoutputHandling()
 
     def addTier(self, userName, tier):
         self._cur.execute("INSERT INTO membership ('username', 'tier') VALUES (?, ?)", (userName, tier))
         self.commit()
+        self.APIoutputHandling()
 
     def checkTier(self, userName): #return True if user is a Plus, False if user is a Standard
         rows = self._cur.execute("SELECT tier FROM membership WHERE username = ?", (userName,))
@@ -503,17 +521,20 @@ class AccountCreation:        # class for creating accounts
                 data = []
                 for line in lines:
                     if line == '=====\n':
-                        if self.checkLimit():
+                        if self.checkLimit() and self.checkExistingUsername(data[0]):
                             self.addAccount(data[0], data[3], data[1], data[2], 'N/A', 'N/A')
+                            self.addTier(data[0], 'standard')
                         data = []
                         continue
                     line = line.strip('\n')
                     data += line.split(' ')
                 if self.checkLimit() and data != []:
                     self.addAccount(data[0], data[3], data[1], data[2], 'N/A', 'N/A')
+                    self.addTier(data[0], 'standard')
+            os.remove('studentAccounts.txt')
         except FileNotFoundError:
             print("studentAccounts.txt not found")
-        os.remove('studentAccounts.txt')
+
 
     def APIoutputHandling(self):
         try:
@@ -531,6 +552,7 @@ class ProfilesCreation:
         #creates a table in sql for profiles info
         self._cur.execute("CREATE TABLE IF NOT EXISTS profiles ('profile_user' TEXT NOT NULL,'title' TEXT NOT NULL, 'major' TEXT NOT NULL, 'university' TEXT NOT NULL, 'info' TEXT NOT NULL, 'experience' TEXT NOT NULL, 'education' TEXT NOT NULL)")
         self._db.commit()
+        self.APIoutputHandling()
     
     def addProfileUser(self, profile_user):    # Add a new user profile. default to null
         query = "INSERT INTO profiles ('profile_user', 'title','major','university','info','experience','education') VALUES (?,?,?,?,?,?,?)"
@@ -604,7 +626,9 @@ class ProfilesCreation:
                 self.addEdu(accounts.currentUser, education)
             elif(selection == 7): 
                 print("Changes have been saved")
+            self.APIoutputHandling()
             selection = int(input("\nPlease select a profile edit option:\n1. Edit or enter Title\n2. Edit or enter Major\n3. Edit or enter University\n4. Edit or enter Info\n5. Edit or enter Experience \n6. Edit or enter Education\n7. Save and Exit\n-> "))
+            
     
     def checkExistingUsername(self, profile_name):               # Checking Dup when the user creates a new account
         rows = self._cur.execute("SELECT profile_user FROM profiles WHERE profile_user = ?", (profile_name,))
@@ -621,6 +645,7 @@ class ProfilesCreation:
             self.addProfileUser(curUser) #user creates profile
             self.editProfile()
             print("\n Your profile has been created!")
+            self.APIoutputHandling()
 
     def viewProfile(self, user_name):        # view profile of a user
         rows = self._cur.execute("SELECT * FROM profiles WHERE profile_user = ?", (user_name,))
@@ -1343,6 +1368,7 @@ def main():    # Main function, start of program
     friends.close()
     jobs.close()
     accounts.close()
+    
 
 if __name__ =="__main__":
     main()
