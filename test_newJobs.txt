@@ -1,0 +1,26 @@
+Software Dev Internship at Google
+Work at Google on software and collect data on users.
+Get coffee for the CEO every hour for 8 hours.
+Create Google 2 algorithm.
+&&&
+Shauskii3
+Google Company
+Seattle WA
+30.0
+=====
+Electric Engineer at Intel
+Create processors.
+&&&
+Shauskii3
+Intel Company
+Seattle WA
+170000.0
+=====
+Mechanical Engineer
+Build a robot for Department of Defense.
+&&&
+omo4
+Department of Defense
+Washington DC
+100000.0
+=====
